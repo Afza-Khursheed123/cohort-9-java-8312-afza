@@ -15,24 +15,35 @@ function Home() {
   const [showForm, setShowForm] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
+  const contactsVersion = useRef(0);
 
   async function loadContacts() {
     const requestId = ++loadRequestId.current;
+    const requestContactsVersion = contactsVersion.current;
     setLoading(true);
     try {
       const response = await contactApi.get("/contacts");
-      if (requestId === loadRequestId.current) {
+      if (
+        requestId === loadRequestId.current &&
+        requestContactsVersion === contactsVersion.current
+      ) {
         setContacts(response.data);
         setLoadError(false);
       }
     } catch (error) {
       console.error("Error loading contacts:", error);
-      if (requestId === loadRequestId.current) {
+      if (
+        requestId === loadRequestId.current &&
+        requestContactsVersion === contactsVersion.current
+      ) {
         setLoadError(true);
         toast.error("Unable to load contacts. Please try again.");
       }
     } finally {
-      if (requestId === loadRequestId.current) {
+      if (
+        requestId === loadRequestId.current &&
+        requestContactsVersion === contactsVersion.current
+      ) {
         setLoading(false);
       }
     }
@@ -63,10 +74,21 @@ function Home() {
 
     try {
       const response = await contactApi.post("/contacts", contact);
-      loadRequestId.current += 1;
-      setLoading(false);
-      setLoadError(false);
-      setContacts((currentContacts) => [...currentContacts, response.data]);
+      contactsVersion.current += 1;
+      setContacts((currentContacts) => {
+        const contactIndex = currentContacts.findIndex(
+          (currentContact) => currentContact.id === response.data.id,
+        );
+
+        if (contactIndex === -1) {
+          return [...currentContacts, response.data];
+        }
+
+        return currentContacts.map((currentContact, index) =>
+          index === contactIndex ? response.data : currentContact,
+        );
+      });
+      void loadContacts();
       toast.success("Contact added successfully!", {
         duration: 4000,
         position: "top-right",
