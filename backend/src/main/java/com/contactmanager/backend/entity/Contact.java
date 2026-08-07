@@ -64,7 +64,7 @@ public class Contact {
     }
 
     public void setEmailAddresses(List<EmailAddress> emailAddresses) {
-        this.emailAddresses = emailAddresses;
+        this.emailAddresses = emailAddresses == null ? new ArrayList<>() : emailAddresses;
     }
 
     public List<PhoneNumber> getPhoneNumbers() {
@@ -72,6 +72,6 @@ public class Contact {
     }
 
     public void setPhoneNumbers(List<PhoneNumber> phoneNumbers) {
-        this.phoneNumbers = phoneNumbers;
+        this.phoneNumbers = phoneNumbers == null ? new ArrayList<>() : phoneNumbers;
     }
 }

@@ -2,7 +2,7 @@
 
 
 @layer utilities {
-  @keyframes fadeInUp {
+  @keyframes fade-in-up {
     from {
       opacity: 0;
       transform: translateY(20px);
@@ -13,7 +13,7 @@
     }
   }
 
-  @keyframes slideDown {
+  @keyframes slide-down {
     from {
       opacity: 0;
       transform: translateY(-10px);
@@ -36,12 +36,12 @@
     }
   }
 
-  .animate-fadeInUp {
-    animation: fadeInUp 0.5s ease-out forwards;
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
   }
 
-  .animate-slideDown {
-    animation: slideDown 0.3s ease-out forwards;
+  .animate-slide-down {
+    animation: slide-down 0.3s ease-out forwards;
   }
 
   .animate-gradient {
@@ -51,8 +51,8 @@
 }
 
 :root {
-  --animate-fadeInUp: fadeInUp 0.5s ease-out forwards;
-  --animate-slideDown: slideDown 0.3s ease-out forwards;
+  --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+  --animate-slide-down: slide-down 0.3s ease-out forwards;
   --animate-gradient: gradient 3s ease infinite;
   --animate-bounce: bounce 2s ease-in-out infinite;
   --animate-pulse: pulse 2s ease-in-out infinite;

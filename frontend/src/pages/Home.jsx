@@ -5,7 +5,7 @@ import ContactForm from "../components/ContactForm";
 import ContactList from "../components/ContactList";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
-import { Users, Plus, Sparkles, Star } from "lucide-react";
+import { Users, Plus, Star } from "lucide-react";
 
 function Home() {
   const [contacts, setContacts] = useState([]);
@@ -14,11 +14,7 @@ function Home() {
   const [showForm, setShowForm] = useState(false);
   const formRef = useRef(null);
 
-  useEffect(() => {
-    loadContacts();
-  }, []);
-
-  const loadContacts = async () => {
+  async function loadContacts() {
     setLoading(true);
     try {
       const response = await contactApi.get("/contacts");
@@ -29,7 +25,11 @@ function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    loadContacts();
+  }, []);
 
   const saveContact = async (data) => {
     const contact = {
@@ -51,7 +51,8 @@ function Home() {
     };
 
     try {
-      await contactApi.post("/contacts", contact);
+      const response = await contactApi.post("/contacts", contact);
+      setContacts((currentContacts) => [...currentContacts, response.data]);
       toast.success("Contact added successfully!", {
         duration: 4000,
         position: "top-right",
@@ -63,7 +64,6 @@ function Home() {
           boxShadow: "0 10px 30px rgba(16, 185, 129, 0.3)",
         },
       });
-      await loadContacts();
       setShowForm(false);
     } catch (error) {
       console.error("Error saving contact:", error);
@@ -129,7 +129,7 @@ function Home() {
         {/* Add Contact Form */}
         <div ref={formRef}>
           {showForm && (
-            <div className="mb-8 bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100/50 p-8 animate-fadeInUp">
+            <div className="mb-8 bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100/50 p-8 animate-fade-in-up">
               <div className="flex items-center gap-3 mb-6">
                 <div className="bg-gradient-to-br from-indigo-500 to-violet-500 p-2 rounded-xl">
                   <Star className="h-5 w-5 text-white" />

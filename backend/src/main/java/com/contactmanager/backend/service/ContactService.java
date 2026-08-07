@@ -3,6 +3,7 @@ package com.contactmanager.backend.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.contactmanager.backend.entity.Contact;
 import com.contactmanager.backend.repository.ContactRepository;
@@ -34,6 +35,7 @@ public class ContactService {
 public void deleteContact(Long id) {
     contactRepository.deleteById(id);
 }
+@Transactional
 public Contact updateContact(Long id, Contact updatedContact) {
 
     Contact existing = contactRepository.findById(id).orElse(null);

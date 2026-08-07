@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Mail, Phone, Briefcase, X, Sparkles } from "lucide-react";
+import { User, Mail, Phone, Briefcase, X } from "lucide-react";
 
 function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
   const [formData, setFormData] = useState({
@@ -142,7 +142,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* First Name */}
         <div className="space-y-1.5 group">
-          <label className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+          <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
             First Name <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
@@ -150,6 +150,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
               <User className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
             </div>
             <input
+              id="firstName"
               type="text"
               name="firstName"
               placeholder="John"
@@ -161,7 +162,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
             />
           </div>
           {errors.firstName && touched.firstName && (
-            <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slideDown">
+            <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slide-down">
               <X className="h-4 w-4" /> {errors.firstName}
             </p>
           )}
@@ -169,7 +170,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
         {/* Last Name */}
         <div className="space-y-1.5 group">
-          <label className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+          <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
             Last Name
           </label>
           <div className="relative">
@@ -177,6 +178,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
               <User className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
             </div>
             <input
+              id="lastName"
               type="text"
               name="lastName"
               placeholder="Doe"
@@ -192,7 +194,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
       {/* Title */}
       <div className="space-y-1.5 group">
-        <label className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+        <label htmlFor="title" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
           Title
         </label>
         <div className="relative">
@@ -200,6 +202,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
             <Briefcase className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
           </div>
           <input
+            id="title"
             type="text"
             name="title"
             placeholder="Software Engineer"
@@ -214,7 +217,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
       {/* Email */}
       <div className="space-y-1.5 group">
-        <label className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+        <label htmlFor="email" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
           Email <span className="text-rose-500">*</span>
         </label>
         <div className="relative">
@@ -222,6 +225,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
             <Mail className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
           </div>
           <input
+            id="email"
             type="email"
             name="email"
             placeholder="john@example.com"
@@ -233,7 +237,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
           />
         </div>
         {errors.email && touched.email && (
-          <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slideDown">
+          <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slide-down">
             <X className="h-4 w-4" /> {errors.email}
           </p>
         )}
@@ -241,7 +245,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
       {/* Phone */}
       <div className="space-y-1.5 group">
-        <label className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+        <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
           Phone <span className="text-rose-500">*</span>
         </label>
         <div className="relative">
@@ -249,6 +253,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
             <Phone className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
           </div>
           <input
+            id="phone"
             type="tel"
             name="phone"
             placeholder="1234567890"
@@ -260,7 +265,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
           />
         </div>
         {errors.phone && touched.phone && (
-          <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slideDown">
+          <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slide-down">
             <X className="h-4 w-4" /> {errors.phone}
           </p>
         )}
