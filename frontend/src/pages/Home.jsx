@@ -10,20 +10,31 @@ import { Users, Plus, Star } from "lucide-react";
 function Home() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const formRef = useRef(null);
+  const loadRequestId = useRef(0);
 
   async function loadContacts() {
+    const requestId = ++loadRequestId.current;
     setLoading(true);
     try {
       const response = await contactApi.get("/contacts");
-      setContacts(response.data);
+      if (requestId === loadRequestId.current) {
+        setContacts(response.data);
+        setLoadError(false);
+      }
     } catch (error) {
       console.error("Error loading contacts:", error);
-      toast.error("Unable to load contacts. Please try again.");
+      if (requestId === loadRequestId.current) {
+        setLoadError(true);
+        toast.error("Unable to load contacts. Please try again.");
+      }
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) {
+        setLoading(false);
+      }
     }
   }
 
@@ -52,6 +63,9 @@ function Home() {
 
     try {
       const response = await contactApi.post("/contacts", contact);
+      loadRequestId.current += 1;
+      setLoading(false);
+      setLoadError(false);
       setContacts((currentContacts) => [...currentContacts, response.data]);
       toast.success("Contact added successfully!", {
         duration: 4000,
@@ -153,6 +167,20 @@ function Home() {
         {/* Contact List */}
         {loading ? (
           <LoadingSpinner />
+        ) : loadError ? (
+          <>
+            {contacts.length > 0 && <ContactList contacts={contacts} />}
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+              <p className="text-rose-700">Unable to load contacts.</p>
+              <button
+                type="button"
+                onClick={loadContacts}
+                className="mt-4 rounded-xl bg-indigo-600 px-4 py-2 font-semibold text-white"
+              >
+                Try Again
+              </button>
+            </div>
+          </>
         ) : contacts.length === 0 ? (
           <EmptyState onAddContact={() => setShowForm(true)} />
         ) : (
