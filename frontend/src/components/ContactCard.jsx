@@ -1,4 +1,4 @@
-import { Mail, Phone, Briefcase, Sparkles } from "lucide-react";
+import { Mail, Phone, Briefcase } from "lucide-react";
 
 function ContactCard({ contact }) {
   const getInitials = (firstName, lastName) => {
