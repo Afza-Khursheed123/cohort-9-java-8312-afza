@@ -1,8 +1,0 @@
-warning: in the working copy of 'backend/src/main/java/com/contactmanager/backend/controller/ContactController.java', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'frontend/package-lock.json', LF will be replaced by CRLF the next time Git touches it
-warning: in the working copy of 'frontend/package.json', LF will be replaced by CRLF the next time Git touches it
- README.md                                          |   2 [31m-[m
- .../backend/controller/ContactController.java      |  30 [32m+[m[31m-[m
- frontend/package-lock.json                         | 311 [32m++++++++++++++++++++[m[31m-[m
- frontend/package.json                              |   1 [32m+[m
- 4 files changed, 324 insertions(+), 20 deletions(-)
