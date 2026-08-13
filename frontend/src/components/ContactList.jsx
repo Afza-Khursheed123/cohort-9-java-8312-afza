@@ -144,8 +144,10 @@ function ContactList({ contacts, onEdit, isDarkMode }) {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#E0FBFC] mb-4">
             <Search className="h-7 w-7 text-[#3D5A80]" />
           </div>
-          <h3 className="text-lg font-medium text-[#293241]">No contacts found</h3>
-          <p className="text-[#3D5A80] mt-1">
+          <h3 className={`text-lg font-medium ${isDarkMode ? "text-[#F7FAFC]" : "text-[#293241]"}`}>
+            No contacts found
+          </h3>
+          <p className={`mt-1 ${isDarkMode ? "text-[#B7C0C7]" : "text-[#3D5A80]"}`}>
             {hasActiveFilters
               ? "Try adjusting your search or filters"
               : "Add your first contact to get started"}

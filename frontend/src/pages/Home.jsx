@@ -142,18 +142,19 @@ function Home() {
       firstName: data.firstName,
       lastName: data.lastName,
       title: data.title,
-      emailAddresses: [
-        {
-          email: data.email,
-          label: editingContact.emailAddresses?.[0]?.label || "Personal",
-        },
-      ],
-      phoneNumbers: [
-        {
-          phoneNumber: data.phone,
-          label: editingContact.phoneNumbers?.[0]?.label || "Mobile",
-        },
-      ],
+      emailAddresses: editingContact.emailAddresses?.length
+        ? editingContact.emailAddresses.map((emailAddress, index) => ({
+            email: index === 0 ? data.email : emailAddress.email,
+            label: emailAddress.label || "Personal",
+          }))
+        : [{ email: data.email, label: "Personal" }],
+      phoneNumbers: editingContact.phoneNumbers?.length
+        ? editingContact.phoneNumbers.map((phoneNumber, index) => ({
+            phoneNumber:
+              index === 0 ? data.phone : phoneNumber.phoneNumber,
+            label: phoneNumber.label || "Mobile",
+          }))
+        : [{ phoneNumber: data.phone, label: "Mobile" }],
     };
 
     try {
