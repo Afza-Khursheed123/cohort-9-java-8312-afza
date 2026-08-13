@@ -10,10 +10,10 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Something went wrong</h1>
-          <p className="text-gray-600">Please try loading the application again.</p>
-          <button type="button" onClick={() => window.location.reload()} className="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white">
+        <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#E0FBFC] p-6 text-center">
+          <h1 className="text-2xl font-bold text-[#293241]">Something went wrong</h1>
+          <p className="text-[#3D5A80]">Please try loading the application again.</p>
+          <button type="button" onClick={() => window.location.reload()} className="rounded-lg bg-[#16425B] px-4 py-2 font-semibold text-white hover:bg-[#3D5A80]">
             Reload
           </button>
         </main>

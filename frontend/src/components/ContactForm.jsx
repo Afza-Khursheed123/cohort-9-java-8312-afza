@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { User, Mail, Phone, Briefcase, X } from "lucide-react";
 
-function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    title: "",
-    email: "",
-    phone: "",
-  });
+const emptyFormData = {
+  firstName: "",
+  lastName: "",
+  title: "",
+  email: "",
+  phone: "",
+};
+
+function ContactForm({
+  onSave,
+  isSubmitting,
+  setIsSubmitting,
+  initialData,
+  onCancel,
+  isDarkMode,
+}) {
+  const [formData, setFormData] = useState(initialData || emptyFormData);
 
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const submissionInProgress = useRef(false);
 
   const validateField = (name, value) => {
     let error = "";
@@ -97,8 +107,12 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting || submissionInProgress.current) {
+      return;
+    }
 
     const allTouched = {};
     Object.keys(formData).forEach((key) => {
@@ -107,47 +121,53 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
     setTouched(allTouched);
 
     if (validateForm()) {
+      submissionInProgress.current = true;
       setIsSubmitting(true);
-      onSave(formData);
+      try {
+        await onSave(formData);
+      } finally {
+        submissionInProgress.current = false;
+      }
     }
   };
 
   const handleReset = () => {
-    setFormData({
-      firstName: "",
-      lastName: "",
-      title: "",
-      email: "",
-      phone: "",
-    });
+    setFormData(emptyFormData);
     setErrors({});
     setTouched({});
   };
 
   const inputClasses = (fieldName) => {
     const baseClasses =
-      "w-full px-4 py-3.5 rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-opacity-50 bg-white/80 backdrop-blur-sm";
+      "w-full px-4 py-3 rounded-xl border border-transparent transition-all duration-200 focus:outline-none focus:ring-2 bg-[#F1F6F8]";
     const errorClasses = errors[fieldName]
-      ? "border-rose-400 focus:ring-rose-400/30 bg-rose-50/30"
-      : "border-gray-200 hover:border-indigo-300 focus:ring-indigo-400/30";
+      ? "ring-2 ring-[#EE6C4D]/60 focus:ring-[#EE6C4D]/40"
+      : "hover:bg-[#E8F1F5] focus:bg-white focus:ring-[#98C1D9]/60";
     const validClasses =
       touched[fieldName] && !errors[fieldName] && formData[fieldName]
-        ? "border-emerald-400 focus:ring-emerald-400/30 bg-emerald-50/30"
+        ? "ring-1 ring-[#98C1D9]/60"
         : "";
     return `${baseClasses} ${errorClasses} ${validClasses}`;
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      className={`space-y-6 transition-colors duration-300 ${
+        isDarkMode
+          ? "[&_label]:text-[#E8ECEF] [&_input]:bg-[#1B2025] [&_input]:text-[#F7FAFC] [&_input::placeholder]:text-[#89939C] [&_input:focus]:bg-[#1B2025]"
+          : ""
+      }`}
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* First Name */}
         <div className="space-y-1.5 group">
-          <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
-            First Name <span className="text-rose-500">*</span>
+          <label htmlFor="firstName" className="block text-sm font-semibold text-[#293241]">
+            First Name <span className="text-[#EE6C4D]">*</span>
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
+              <User className="h-5 w-5 text-[#3D5A80]" />
             </div>
             <input
               id="firstName"
@@ -162,7 +182,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
             />
           </div>
           {errors.firstName && touched.firstName && (
-            <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slide-down">
+            <p className="text-sm text-[#EE6C4D] mt-1.5 flex items-center gap-1.5 animate-slide-down">
               <X className="h-4 w-4" /> {errors.firstName}
             </p>
           )}
@@ -170,12 +190,12 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
         {/* Last Name */}
         <div className="space-y-1.5 group">
-          <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+          <label htmlFor="lastName" className="block text-sm font-semibold text-[#293241]">
             Last Name
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <User className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
+              <User className="h-5 w-5 text-[#3D5A80]" />
             </div>
             <input
               id="lastName"
@@ -194,12 +214,12 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
       {/* Title */}
       <div className="space-y-1.5 group">
-        <label htmlFor="title" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
+        <label htmlFor="title" className="block text-sm font-semibold text-[#293241]">
           Title
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Briefcase className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
+            <Briefcase className="h-5 w-5 text-[#3D5A80]" />
           </div>
           <input
             id="title"
@@ -217,12 +237,12 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
       {/* Email */}
       <div className="space-y-1.5 group">
-        <label htmlFor="email" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
-          Email <span className="text-rose-500">*</span>
+        <label htmlFor="email" className="block text-sm font-semibold text-[#293241]">
+          Email <span className="text-[#EE6C4D]">*</span>
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Mail className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
+            <Mail className="h-5 w-5 text-[#3D5A80]" />
           </div>
           <input
             id="email"
@@ -237,7 +257,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
           />
         </div>
         {errors.email && touched.email && (
-          <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slide-down">
+          <p className="text-sm text-[#EE6C4D] mt-1.5 flex items-center gap-1.5 animate-slide-down">
             <X className="h-4 w-4" /> {errors.email}
           </p>
         )}
@@ -245,12 +265,12 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
 
       {/* Phone */}
       <div className="space-y-1.5 group">
-        <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 group-hover:text-indigo-600 transition-colors duration-300">
-          Phone <span className="text-rose-500">*</span>
+        <label htmlFor="phone" className="block text-sm font-semibold text-[#293241]">
+          Phone <span className="text-[#EE6C4D]">*</span>
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Phone className="h-5 w-5 text-gray-400 group-hover:text-indigo-400 transition-colors duration-300" />
+            <Phone className="h-5 w-5 text-[#3D5A80]" />
           </div>
           <input
             id="phone"
@@ -265,7 +285,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
           />
         </div>
         {errors.phone && touched.phone && (
-          <p className="text-sm text-rose-500 mt-1.5 flex items-center gap-1.5 animate-slide-down">
+          <p className="text-sm text-[#EE6C4D] mt-1.5 flex items-center gap-1.5 animate-slide-down">
             <X className="h-4 w-4" /> {errors.phone}
           </p>
         )}
@@ -276,7 +296,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl font-semibold hover:from-indigo-700 hover:to-violet-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] active:scale-[0.98]"
+          className="flex-1 px-6 py-3 text-white rounded-full font-semibold bg-[#16425B] hover:bg-[#245B75] hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
@@ -300,22 +320,22 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting }) {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              Saving...
+              {initialData ? "Updating..." : "Saving..."}
             </span>
           ) : (
             <span className="flex items-center justify-center gap-2">
             
-              Save Contact
+              {initialData ? "Update Contact" : "Save Contact"}
             </span>
           )}
         </button>
         <button
           type="button"
-          onClick={handleReset}
+          onClick={initialData ? onCancel : handleReset}
           disabled={isSubmitting}
-          className="px-6 py-3.5 bg-gray-100/80 backdrop-blur-sm text-gray-700 rounded-2xl font-semibold hover:bg-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-[#E7F1F6] text-[#293241] rounded-full font-semibold hover:bg-[#D9EAF2] transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Reset
+          {initialData ? "Cancel" : "Reset"}
         </button>
       </div>
     </form>
