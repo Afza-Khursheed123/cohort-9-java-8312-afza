@@ -5,7 +5,7 @@ import ContactForm from "../components/ContactForm";
 import ContactList from "../components/ContactList";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
-import { Users, Plus, Moon, Sun } from "lucide-react";
+import { Users, Plus, Moon, Sun, Trash2, X } from "lucide-react";
 
 function Home() {
   const [contacts, setContacts] = useState([]);
@@ -15,9 +15,12 @@ function Home() {
   const [showForm, setShowForm] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
   const contactsVersion = useRef(0);
+  const deleteInProgress = useRef(false);
   const editFormData = useMemo(
     () =>
       editingContact
@@ -202,6 +205,54 @@ function Home() {
     setShowForm(false);
   };
 
+  const deleteContact = async () => {
+    if (!contactToDelete || isDeleting || deleteInProgress.current) {
+      return;
+    }
+
+    deleteInProgress.current = true;
+    setIsDeleting(true);
+
+    try {
+      await contactApi.delete(`/contacts/${contactToDelete.id}`);
+      contactsVersion.current += 1;
+      setContacts((currentContacts) =>
+        currentContacts.filter(
+          (currentContact) => currentContact.id !== contactToDelete.id,
+        ),
+      );
+
+      if (editingContact?.id === contactToDelete.id) {
+        setEditingContact(null);
+        setShowForm(false);
+      }
+
+      toast.success("Contact deleted successfully!", {
+        duration: 4000,
+        position: "top-right",
+        style: {
+          background: "#16425B",
+          color: "#fff",
+          padding: "16px 20px",
+          borderRadius: "8px",
+        },
+      });
+      setContactToDelete(null);
+    } catch (error) {
+      console.error("Error deleting contact:", error);
+      const message =
+        error.response?.status === 404
+          ? "This contact no longer exists. Refresh and try again."
+          : error.response
+            ? "Unable to delete contact. Please try again."
+            : "Unable to reach the server. Check your connection and try again.";
+      toast.error(message);
+    } finally {
+      deleteInProgress.current = false;
+      setIsDeleting(false);
+    }
+  };
+
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -297,7 +348,7 @@ function Home() {
         ) : loadError ? (
           <>
             {contacts.length > 0 && (
-              <ContactList contacts={contacts} onEdit={editContact} isDarkMode={isDarkMode} />
+              <ContactList contacts={contacts} onEdit={editContact} onDelete={setContactToDelete} isDarkMode={isDarkMode} />
             )}
             <div className="rounded-lg border border-[#EE6C4D] bg-white p-6 text-center">
               <p className="text-[#293241]">Unable to load contacts.</p>
@@ -313,9 +364,71 @@ function Home() {
         ) : contacts.length === 0 ? (
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
-          <ContactList contacts={contacts} onEdit={editContact} isDarkMode={isDarkMode} />
+          <ContactList contacts={contacts} onEdit={editContact} onDelete={setContactToDelete} isDarkMode={isDarkMode} />
         )}
       </div>
+
+      {contactToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm animate-fade-in-up"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-contact-title"
+        >
+          <div
+            className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${
+              isDarkMode ? "bg-[#242B31] text-[#F7FAFC]" : "bg-white text-[#293241]"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#FCE9E4] text-[#D95D40]">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 id="delete-contact-title" className="text-xl font-bold">
+                  Delete contact?
+                </h2>
+                <p className={`mt-2 ${isDarkMode ? "text-[#B7C0C7]" : "text-[#60758A]"}`}>
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold">
+                    {contactToDelete.firstName} {contactToDelete.lastName}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setContactToDelete(null)}
+                disabled={isDeleting}
+                className="rounded-full p-2 text-[#60758A] hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close delete confirmation"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-7 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setContactToDelete(null)}
+                disabled={isDeleting}
+                className={`rounded-full px-5 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isDarkMode ? "bg-white/10 hover:bg-white/15" : "bg-[#E7EDF0] hover:bg-[#DCE5E9]"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={deleteContact}
+                disabled={isDeleting}
+                className="flex min-w-24 items-center justify-center rounded-full bg-[#EE6C4D] px-5 py-2.5 font-semibold text-white hover:bg-[#D95D40] disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
