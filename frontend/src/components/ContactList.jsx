@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import ContactCard from "./ContactCard";
 import { Search, Filter, ArrowUpDown, X } from "lucide-react";
 
-function ContactList({ contacts }) {
+function ContactList({ contacts, onEdit, isDarkMode }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [filterTitle, setFilterTitle] = useState("");
@@ -71,27 +71,27 @@ function ContactList({ contacts }) {
   return (
     <div className="space-y-6">
       {/* Filters and Search Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+      <div className="py-2 transition-colors duration-300">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-[#3D5A80]" />
             <input
               type="text"
               placeholder="Search contacts..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+              className={`w-full pl-10 pr-4 py-3 rounded-xl border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#98C1D9] transition-all duration-200 ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC] placeholder:text-[#89939C]" : "bg-white text-[#293241] placeholder:text-[#8293A3]"}`}
             />
           </div>
 
           {/* Sort */}
           <div className="flex items-center gap-2">
-            <ArrowUpDown className="h-5 w-5 text-gray-400" />
+            <ArrowUpDown className="h-5 w-5 text-[#3D5A80]" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+              className={`px-3 py-3 rounded-xl border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#98C1D9] transition-all duration-200 ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC]" : "bg-white text-[#293241]"}`}
             >
               <option value="name">Sort by Name</option>
               <option value="email">Sort by Email</option>
@@ -102,11 +102,11 @@ function ContactList({ contacts }) {
           {/* Title Filter */}
           {uniqueTitles.length > 0 && (
             <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5 text-gray-400" />
+              <Filter className="h-5 w-5 text-[#3D5A80]" />
               <select
                 value={filterTitle}
                 onChange={(e) => setFilterTitle(e.target.value)}
-                className="px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                className={`px-3 py-3 rounded-xl border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#98C1D9] transition-all duration-200 ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC]" : "bg-white text-[#293241]"}`}
               >
                 <option value="">All Titles</option>
                 {uniqueTitles.map((title) => (
@@ -122,7 +122,7 @@ function ContactList({ contacts }) {
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 flex items-center gap-1"
+              className={`px-4 py-2.5 text-sm rounded-full transition-all duration-200 flex items-center gap-1 ${isDarkMode ? "text-[#AFCBDD] hover:bg-white/10" : "text-[#16425B] hover:bg-[#E7F1F6]"}`}
             >
               <X className="h-4 w-4" />
               Clear
@@ -132,7 +132,7 @@ function ContactList({ contacts }) {
       </div>
 
       {/* Results Count */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className={`flex items-center justify-between text-sm ${isDarkMode ? "text-[#98C1D9]" : "text-[#3D5A80]"}`}>
         <p>
           Showing {filteredAndSortedContacts.length} of {contacts.length} contacts
         </p>
@@ -140,12 +140,14 @@ function ContactList({ contacts }) {
 
       {/* Contact Cards Grid */}
       {filteredAndSortedContacts.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-            <Search className="h-8 w-8 text-gray-400" />
+        <div className={`text-center py-14 rounded-2xl ${isDarkMode ? "bg-[#242B31]" : "bg-white shadow-sm"}`}>
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#E0FBFC] mb-4">
+            <Search className="h-7 w-7 text-[#3D5A80]" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900">No contacts found</h3>
-          <p className="text-gray-500 mt-1">
+          <h3 className={`text-lg font-medium ${isDarkMode ? "text-[#F7FAFC]" : "text-[#293241]"}`}>
+            No contacts found
+          </h3>
+          <p className={`mt-1 ${isDarkMode ? "text-[#B7C0C7]" : "text-[#3D5A80]"}`}>
             {hasActiveFilters
               ? "Try adjusting your search or filters"
               : "Add your first contact to get started"}
@@ -154,7 +156,7 @@ function ContactList({ contacts }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAndSortedContacts.map((contact) => (
-            <ContactCard key={contact.id} contact={contact} />
+            <ContactCard key={contact.id} contact={contact} onEdit={onEdit} isDarkMode={isDarkMode} />
           ))}
         </div>
       )}
