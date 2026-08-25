@@ -50,7 +50,12 @@ function Home() {
           size: 9,
           search: searchTerm.trim(),
           title: filterTitle,
-          sort: sortBy === "title" ? "title" : "firstName",
+          sort:
+            sortBy === "title"
+              ? "title"
+              : sortBy === "email"
+                ? "email"
+                : "firstName",
         },
       });
       if (
@@ -342,7 +347,7 @@ function Home() {
         </div>
 
         {/* Contact List */}
-        {loading && contacts.length === 0 && !searchTerm && !filterTitle ? (
+        {loading && contacts.length === 0 ? (
           <LoadingSpinner isDarkMode={isDarkMode} />
         ) : loadError ? (
           <>

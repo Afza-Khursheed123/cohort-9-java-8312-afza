@@ -18,19 +18,6 @@ function ContactList({
   totalElements,
   onPageChange,
 }) {
-  // Email sorting remains client-side because email addresses are a child collection.
-  const displayedContacts = useMemo(() => {
-    let result = [...contacts];
-    if (sortBy === "email") {
-      result.sort((a, b) =>
-        (a.emailAddresses?.[0]?.email || "").localeCompare(
-          b.emailAddresses?.[0]?.email || "",
-        ),
-      );
-    }
-
-    return result;
-  }, [contacts, sortBy]);
   const pageNumbers = useMemo(() => {
     const start = Math.max(0, Math.min(page - 2, totalPages - 5));
     return Array.from(
@@ -119,7 +106,7 @@ function ContactList({
       </div>
 
       {/* Contact Cards Grid */}
-      {displayedContacts.length === 0 ? (
+      {contacts.length === 0 ? (
         <div className={`text-center py-14 rounded-2xl ${isDarkMode ? "bg-[#242B31]" : "bg-white shadow-sm"}`}>
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#E0FBFC] mb-4">
             <Search className="h-7 w-7 text-[#3D5A80]" />
@@ -135,7 +122,7 @@ function ContactList({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedContacts.map((contact) => (
+          {contacts.map((contact) => (
             <ContactCard key={contact.id} contact={contact} onEdit={onEdit} isDarkMode={isDarkMode} />
           ))}
         </div>

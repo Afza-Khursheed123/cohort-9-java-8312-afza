@@ -40,7 +40,7 @@ public class ContactController {
 
     private static final int DEFAULT_PAGE_SIZE = 9;
     private static final int MAX_PAGE_SIZE = 100;
-    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "title");
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("firstName", "title", "email");
 
     @GetMapping
     public Page<Contact> getContacts(
@@ -52,6 +52,9 @@ public class ContactController {
         int safePage = Math.max(page, 0);
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         String safeSort = ALLOWED_SORT_FIELDS.contains(sort) ? sort : "firstName";
+        if ("email".equals(safeSort)) {
+            safeSort = "emailAddresses.email";
+        }
         Sort contactSort = Sort.by(Sort.Order.asc(safeSort).ignoreCase(), Sort.Order.asc("id"));
         return contactService.getContacts(search, title, PageRequest.of(safePage, safeSize, contactSort));
     }
