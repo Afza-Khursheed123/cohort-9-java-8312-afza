@@ -21,6 +21,9 @@ function Home() {
   const loadRequestId = useRef(0);
   const contactsVersion = useRef(0);
   const deleteInProgress = useRef(false);
+  const deleteDialogRef = useRef(null);
+  const deleteDialogInitialFocusRef = useRef(null);
+  const deleteTriggerRef = useRef(null);
   const editFormData = useMemo(
     () =>
       editingContact
@@ -70,6 +73,20 @@ function Home() {
   useEffect(() => {
     loadContacts();
   }, []);
+
+  useEffect(() => {
+    if (!contactToDelete) {
+      return undefined;
+    }
+
+    deleteDialogInitialFocusRef.current?.focus();
+
+    return () => {
+      if (deleteTriggerRef.current?.isConnected) {
+        deleteTriggerRef.current.focus();
+      }
+    };
+  }, [contactToDelete]);
 
   const saveContact = async (data) => {
     const contact = {
@@ -203,6 +220,39 @@ function Home() {
   const cancelEdit = () => {
     setEditingContact(null);
     setShowForm(false);
+  };
+
+  const openDeleteDialog = (contact) => {
+    deleteTriggerRef.current = document.activeElement;
+    setContactToDelete(contact);
+  };
+
+  const handleDeleteDialogKeyDown = (event) => {
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      deleteDialogRef.current?.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    );
+
+    if (focusableElements.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement.focus();
+    }
   };
 
   const deleteContact = async () => {
@@ -348,7 +398,7 @@ function Home() {
         ) : loadError ? (
           <>
             {contacts.length > 0 && (
-              <ContactList contacts={contacts} onEdit={editContact} onDelete={setContactToDelete} isDarkMode={isDarkMode} />
+              <ContactList contacts={contacts} onEdit={editContact} onDelete={openDeleteDialog} isDarkMode={isDarkMode} />
             )}
             <div className="rounded-lg border border-[#EE6C4D] bg-white p-6 text-center">
               <p className="text-[#293241]">Unable to load contacts.</p>
@@ -364,16 +414,18 @@ function Home() {
         ) : contacts.length === 0 ? (
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
-          <ContactList contacts={contacts} onEdit={editContact} onDelete={setContactToDelete} isDarkMode={isDarkMode} />
+          <ContactList contacts={contacts} onEdit={editContact} onDelete={openDeleteDialog} isDarkMode={isDarkMode} />
         )}
       </div>
 
       {contactToDelete && (
         <div
+          ref={deleteDialogRef}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm animate-fade-in-up"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-contact-title"
+          onKeyDown={handleDeleteDialogKeyDown}
         >
           <div
             className={`w-full max-w-md rounded-2xl p-6 shadow-2xl ${
@@ -397,6 +449,7 @@ function Home() {
                 </p>
               </div>
               <button
+                ref={deleteDialogInitialFocusRef}
                 type="button"
                 onClick={() => setContactToDelete(null)}
                 disabled={isDeleting}
