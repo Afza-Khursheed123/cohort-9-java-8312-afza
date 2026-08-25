@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import contactApi from "../api/contactApi";
 import ContactForm from "../components/ContactForm";
@@ -9,6 +9,13 @@ import { Users, Plus, Moon, Sun } from "lucide-react";
 
 function Home() {
   const [contacts, setContacts] = useState([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterTitle, setFilterTitle] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [titles, setTitles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,17 +39,31 @@ function Home() {
     [editingContact],
   );
 
-  async function loadContacts() {
+  const loadContacts = useCallback(async () => {
     const requestId = ++loadRequestId.current;
     const requestContactsVersion = contactsVersion.current;
     setLoading(true);
     try {
-      const response = await contactApi.get("/contacts");
+      const response = await contactApi.get("/contacts", {
+        params: {
+          page,
+          size: 9,
+          search: searchTerm.trim(),
+          title: filterTitle,
+          sort: sortBy === "title" ? "title" : "firstName",
+        },
+      });
       if (
         requestId === loadRequestId.current &&
         requestContactsVersion === contactsVersion.current
       ) {
-        setContacts(response.data);
+        if (response.data.totalPages > 0 && page >= response.data.totalPages) {
+          setPage(response.data.totalPages - 1);
+          return;
+        }
+        setContacts(response.data.content);
+        setTotalPages(response.data.totalPages);
+        setTotalElements(response.data.totalElements);
         setLoadError(false);
       }
     } catch (error) {
@@ -62,11 +83,34 @@ function Home() {
         setLoading(false);
       }
     }
-  }
+  }, [filterTitle, page, searchTerm, sortBy]);
 
   useEffect(() => {
-    loadContacts();
+    loadRequestId.current += 1;
+    const timeoutId = setTimeout(loadContacts, searchTerm ? 300 : 0);
+    return () => clearTimeout(timeoutId);
+  }, [loadContacts, searchTerm]);
+
+  useEffect(() => {
+    contactApi.get("/contacts/titles")
+      .then((response) => setTitles(response.data))
+      .catch((error) => console.error("Error loading contact titles:", error));
   }, []);
+
+  const changeSearch = (value) => {
+    setSearchTerm(value);
+    setPage(0);
+  };
+
+  const changeTitle = (value) => {
+    setFilterTitle(value);
+    setPage(0);
+  };
+
+  const changeSort = (value) => {
+    setSortBy(value);
+    setPage(0);
+  };
 
   const saveContact = async (data) => {
     const contact = {
@@ -104,6 +148,9 @@ function Home() {
         );
       });
       void loadContacts();
+      contactApi.get("/contacts/titles")
+        .then((titlesResponse) => setTitles(titlesResponse.data))
+        .catch((error) => console.error("Error refreshing contact titles:", error));
       toast.success("Contact added successfully!", {
         duration: 4000,
         position: "top-right",
@@ -171,6 +218,9 @@ function Home() {
         ),
       );
       void loadContacts();
+      contactApi.get("/contacts/titles")
+        .then((titlesResponse) => setTitles(titlesResponse.data))
+        .catch((error) => console.error("Error refreshing contact titles:", error));
       toast.success("Contact updated successfully!", {
         duration: 4000,
         position: "top-right",
@@ -292,12 +342,27 @@ function Home() {
         </div>
 
         {/* Contact List */}
-        {loading ? (
+        {loading && contacts.length === 0 && !searchTerm && !filterTitle ? (
           <LoadingSpinner isDarkMode={isDarkMode} />
         ) : loadError ? (
           <>
             {contacts.length > 0 && (
-              <ContactList contacts={contacts} onEdit={editContact} isDarkMode={isDarkMode} />
+              <ContactList
+                contacts={contacts}
+                onEdit={editContact}
+                isDarkMode={isDarkMode}
+                searchTerm={searchTerm}
+                onSearchChange={changeSearch}
+                sortBy={sortBy}
+                onSortChange={changeSort}
+                filterTitle={filterTitle}
+                onTitleChange={changeTitle}
+                titles={titles}
+                page={page}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                onPageChange={setPage}
+              />
             )}
             <div className="rounded-lg border border-[#EE6C4D] bg-white p-6 text-center">
               <p className="text-[#293241]">Unable to load contacts.</p>
@@ -310,10 +375,25 @@ function Home() {
               </button>
             </div>
           </>
-        ) : contacts.length === 0 ? (
+        ) : contacts.length === 0 && !searchTerm && !filterTitle ? (
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
-          <ContactList contacts={contacts} onEdit={editContact} isDarkMode={isDarkMode} />
+          <ContactList
+            contacts={contacts}
+            onEdit={editContact}
+            isDarkMode={isDarkMode}
+            searchTerm={searchTerm}
+            onSearchChange={changeSearch}
+            sortBy={sortBy}
+            onSortChange={changeSort}
+            filterTitle={filterTitle}
+            onTitleChange={changeTitle}
+            titles={titles}
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            onPageChange={setPage}
+          />
         )}
       </div>
     </div>

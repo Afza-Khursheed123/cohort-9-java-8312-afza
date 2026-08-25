@@ -2,6 +2,8 @@ package com.contactmanager.backend.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,12 @@ public class ContactService {
 
     public List<Contact> getAllContacts() {
         return contactRepository.findAll();
+    }
+    public Page<Contact> getContacts(String search, String title, Pageable pageable) {
+        return contactRepository.findContacts(search.trim(), title.trim(), pageable);
+    }
+    public List<String> getContactTitles() {
+        return contactRepository.findDistinctTitles();
     }
     public Contact getContactById(Long id) {
     return contactRepository.findById(id).orElse(null);
