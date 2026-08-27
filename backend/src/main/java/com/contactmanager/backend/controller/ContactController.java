@@ -53,7 +53,10 @@ public class ContactController {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         String safeSort = ALLOWED_SORT_FIELDS.contains(sort) ? sort : "firstName";
         if ("email".equals(safeSort)) {
-            safeSort = "emailAddresses.email";
+            return contactService.getContactsSortedByEmail(
+                    search,
+                    title,
+                    PageRequest.of(safePage, safeSize));
         }
         Sort contactSort = Sort.by(Sort.Order.asc(safeSort).ignoreCase(), Sort.Order.asc("id"));
         return contactService.getContacts(search, title, PageRequest.of(safePage, safeSize, contactSort));

@@ -34,6 +34,9 @@ public class ContactService {
     public Page<Contact> getContacts(String search, String title, Pageable pageable) {
         return contactRepository.findContacts(search.trim(), title.trim(), pageable);
     }
+    public Page<Contact> getContactsSortedByEmail(String search, String title, Pageable pageable) {
+        return contactRepository.findContactsSortedByEmail(search.trim(), title.trim(), pageable);
+    }
     public List<String> getContactTitles() {
         return contactRepository.findDistinctTitles();
     }
