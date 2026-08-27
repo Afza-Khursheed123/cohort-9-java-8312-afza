@@ -7,7 +7,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import { Users, Plus, Moon, Sun } from "lucide-react";
 
-function Home() {
+function Home({ onRegister }) {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -232,6 +232,13 @@ function Home() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onRegister}
+                className="rounded-full border border-[#98C1D9]/60 px-4 py-2 text-sm font-semibold text-[#E0FBFC] transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#98C1D9]"
+              >
+                Register
+              </button>
               <button
                 type="button"
                 onClick={() => setIsDarkMode((currentMode) => !currentMode)}
