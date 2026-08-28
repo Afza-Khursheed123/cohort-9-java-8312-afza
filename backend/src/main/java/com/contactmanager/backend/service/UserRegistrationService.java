@@ -13,7 +13,6 @@ import com.contactmanager.backend.dto.RegistrationRequest;
 import com.contactmanager.backend.dto.RegistrationResponse;
 import com.contactmanager.backend.entity.User;
 import com.contactmanager.backend.entity.User.IdentifierType;
-import com.contactmanager.backend.exception.DuplicateUserException;
 import com.contactmanager.backend.exception.RegistrationPersistenceException;
 import com.contactmanager.backend.repository.UserRepository;
 
@@ -36,7 +35,7 @@ public class UserRegistrationService {
 
         try {
             if (userRepository.existsByIdentifier(identifier)) {
-                throw duplicate();
+                return registrationAccepted();
             }
         } catch (DataAccessException exception) {
             throw persistenceFailure(exception);
@@ -50,23 +49,23 @@ public class UserRegistrationService {
                 passwordEncoder.encode(request.password()));
 
         try {
-            User saved = userRepository.saveAndFlush(user);
-            return new RegistrationResponse(
-                    saved.getId(),
-                    saved.getFirstName(),
-                    saved.getLastName(),
-                    usesEmail ? saved.getIdentifier() : null,
-                    usesEmail ? null : saved.getIdentifier(),
-                    "Registration successful");
+            userRepository.saveAndFlush(user);
+            return registrationAccepted();
         } catch (DataIntegrityViolationException exception) {
-            throw duplicate();
+            return registrationAccepted();
         } catch (DataAccessException exception) {
             throw persistenceFailure(exception);
         }
     }
 
-    private DuplicateUserException duplicate() {
-        return new DuplicateUserException("An account with the provided contact information already exists");
+    private RegistrationResponse registrationAccepted() {
+        return new RegistrationResponse(
+                null,
+                null,
+                null,
+                null,
+                null,
+                "If the provided contact information is eligible, registration has been accepted");
     }
 
     private RegistrationPersistenceException persistenceFailure(DataAccessException cause) {
