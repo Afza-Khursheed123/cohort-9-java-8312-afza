@@ -23,14 +23,22 @@ public class RegistrationExceptionHandler {
         Map<String, String> errors = new LinkedHashMap<>();
         exception.getBindingResult().getFieldErrors()
                 .forEach(error -> {
-                    String field = "exactlyOneIdentifierProvided".equals(error.getField())
-                            ? "identifier"
-                            : error.getField();
+                    String field = switch (error.getField()) {
+                        case "exactlyOneIdentifierProvided" -> "identifier";
+                        case "passwordWithinBcryptLimit" -> "password";
+                        default -> error.getField();
+                    };
                     errors.putIfAbsent(field, error.getDefaultMessage());
                 });
         exception.getBindingResult().getGlobalErrors()
                 .forEach(error -> errors.putIfAbsent("identifier", error.getDefaultMessage()));
         return error(HttpStatus.BAD_REQUEST, "Registration details are invalid", errors);
+    }
+
+    @ExceptionHandler(RegistrationPersistenceException.class)
+    public ResponseEntity<ApiError> handlePersistenceFailure(RegistrationPersistenceException exception) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE,
+                "Registration is temporarily unavailable. Please try again later.", Map.of());
     }
 
     private ResponseEntity<ApiError> error(HttpStatus status, String message, Map<String, String> errors) {

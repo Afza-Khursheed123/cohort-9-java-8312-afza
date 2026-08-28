@@ -35,7 +35,8 @@ function Registration({ onBack }) {
       nextErrors.phone = "Use 8 to 15 digits, optionally starting with +";
     }
 
-    if (form.password.length < 8 || form.password.length > 72) nextErrors.password = "Password must be between 8 and 72 characters";
+    if (form.password.length < 8) nextErrors.password = "Password must be at least 8 characters";
+    else if (new TextEncoder().encode(form.password).length > 72) nextErrors.password = "Password must not exceed 72 bytes when UTF-8 encoded";
     if (form.confirmPassword !== form.password) nextErrors.confirmPassword = "Passwords do not match";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -151,7 +152,7 @@ function Registration({ onBack }) {
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
               <input id="password" type={showPassword ? "text" : "password"} name="password" autoComplete="new-password" value={form.password} onChange={updateField} disabled={submitting} aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? "password-error" : "password-help"} className={`${inputClass("password")} pl-4 pr-11`} />
-              {!errors.password && <p id="password-help" className="mt-1.5 text-xs text-[#3D5A80]">Use 8 to 72 characters.</p>}
+              {!errors.password && <p id="password-help" className="mt-1.5 text-xs text-[#3D5A80]">Use at least 8 characters and no more than 72 UTF-8 bytes.</p>}
             </Field>
 
             <Field label="Confirm password" name="confirmPassword" error={fieldError("confirmPassword")}>

@@ -15,7 +15,7 @@ import com.contactmanager.backend.service.UserRegistrationService;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "${app.cors.allowed-origin}")
 @RestController
 @RequestMapping("/api/users")
 @Validated

@@ -2,6 +2,7 @@ package com.contactmanager.backend.service;
 
 import java.util.Locale;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +14,7 @@ import com.contactmanager.backend.dto.RegistrationResponse;
 import com.contactmanager.backend.entity.User;
 import com.contactmanager.backend.entity.User.IdentifierType;
 import com.contactmanager.backend.exception.DuplicateUserException;
+import com.contactmanager.backend.exception.RegistrationPersistenceException;
 import com.contactmanager.backend.repository.UserRepository;
 
 @Service
@@ -32,8 +34,12 @@ public class UserRegistrationService {
                 ? request.email().trim().toLowerCase(Locale.ROOT)
                 : request.phone().trim();
 
-        if (userRepository.existsByIdentifier(identifier)) {
-            throw duplicate(usesEmail);
+        try {
+            if (userRepository.existsByIdentifier(identifier)) {
+                throw duplicate();
+            }
+        } catch (DataAccessException exception) {
+            throw persistenceFailure(exception);
         }
 
         User user = new User(
@@ -53,12 +59,17 @@ public class UserRegistrationService {
                     usesEmail ? null : saved.getIdentifier(),
                     "Registration successful");
         } catch (DataIntegrityViolationException exception) {
-            throw duplicate(usesEmail);
+            throw duplicate();
+        } catch (DataAccessException exception) {
+            throw persistenceFailure(exception);
         }
     }
 
-    private DuplicateUserException duplicate(boolean usesEmail) {
-        return new DuplicateUserException(
-                usesEmail ? "An account with this email already exists" : "An account with this phone number already exists");
+    private DuplicateUserException duplicate() {
+        return new DuplicateUserException("An account with the provided contact information already exists");
+    }
+
+    private RegistrationPersistenceException persistenceFailure(DataAccessException cause) {
+        return new RegistrationPersistenceException("Unable to persist registration", cause);
     }
 }

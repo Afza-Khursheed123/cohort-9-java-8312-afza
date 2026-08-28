@@ -1,5 +1,7 @@
 package com.contactmanager.backend.dto;
 
+import java.nio.charset.StandardCharsets;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -23,12 +25,17 @@ public record RegistrationRequest(
         String phone,
 
         @NotBlank(message = "Password is required")
-        @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters")
+        @Size(min = 8, message = "Password must be at least 8 characters")
         String password) {
 
     @AssertTrue(message = "Provide either an email address or a phone number, but not both")
     public boolean isExactlyOneIdentifierProvided() {
         return hasText(email) ^ hasText(phone);
+    }
+
+    @AssertTrue(message = "Password must not exceed 72 bytes when UTF-8 encoded")
+    public boolean isPasswordWithinBcryptLimit() {
+        return password == null || password.getBytes(StandardCharsets.UTF_8).length <= 72;
     }
 
     private static boolean hasText(String value) {
