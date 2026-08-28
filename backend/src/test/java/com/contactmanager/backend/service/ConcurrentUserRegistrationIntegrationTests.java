@@ -45,9 +45,9 @@ class ConcurrentUserRegistrationIntegrationTests {
             RegistrationResponse secondResponse = second.get(30, TimeUnit.SECONDS);
 
             assertThat(firstResponse).isEqualTo(secondResponse);
-            assertThat(userRepository.findByIdentifier(email)).isPresent();
+            assertThat(userRepository.findAllByIdentifier(email)).hasSize(1);
         } finally {
-            userRepository.findByIdentifier(email).ifPresent(userRepository::delete);
+            userRepository.deleteAll(userRepository.findAllByIdentifier(email));
         }
     }
 

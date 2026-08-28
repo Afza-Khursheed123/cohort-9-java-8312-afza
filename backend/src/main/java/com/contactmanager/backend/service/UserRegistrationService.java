@@ -2,6 +2,7 @@ package com.contactmanager.backend.service;
 
 import java.util.Locale;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,10 +54,25 @@ public class UserRegistrationService {
             registrationWriter.insert(user);
             return registrationAccepted();
         } catch (DataIntegrityViolationException exception) {
-            return registrationAccepted();
+            if (violatesIdentifierConstraint(exception)) {
+                return registrationAccepted();
+            }
+            throw persistenceFailure(exception);
         } catch (DataAccessException exception) {
             throw persistenceFailure(exception);
         }
+    }
+
+    private boolean violatesIdentifierConstraint(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraintViolation
+                    && "uk_users_identifier".equalsIgnoreCase(constraintViolation.getConstraintName())) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     private RegistrationResponse registrationAccepted() {

@@ -7,6 +7,8 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import { Users, Plus, Moon, Sun, Trash2, X, CircleUserRound } from "lucide-react";
 
+const requestTitles = () => contactApi.get("/contacts/titles");
+
 function Home({ onProfile }) {
   const [contacts, setContacts] = useState([]);
   const [page, setPage] = useState(0);
@@ -16,6 +18,7 @@ function Home({ onProfile }) {
   const [filterTitle, setFilterTitle] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [titles, setTitles] = useState([]);
+  const [titlesError, setTitlesError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,14 +48,14 @@ function Home({ onProfile }) {
     [editingContact],
   );
 
-  const loadContacts = useCallback(async () => {
+  const loadContacts = useCallback(async (requestedPage = page) => {
     const requestId = ++loadRequestId.current;
     const requestContactsVersion = contactsVersion.current;
     setLoading(true);
     try {
       const response = await contactApi.get("/contacts", {
         params: {
-          page,
+          page: requestedPage,
           size: 9,
           search: searchTerm.trim(),
           title: filterTitle,
@@ -68,7 +71,7 @@ function Home({ onProfile }) {
         requestId === loadRequestId.current &&
         requestContactsVersion === contactsVersion.current
       ) {
-        if (response.data.totalPages > 0 && page >= response.data.totalPages) {
+        if (response.data.totalPages > 0 && requestedPage >= response.data.totalPages) {
           setPage(response.data.totalPages - 1);
           return;
         }
@@ -96,6 +99,17 @@ function Home({ onProfile }) {
     }
   }, [filterTitle, page, searchTerm, sortBy]);
 
+  const loadTitles = useCallback(async () => {
+    setTitlesError(false);
+    try {
+      const response = await requestTitles();
+      setTitles(response.data);
+    } catch (error) {
+      console.error("Error loading contact titles:", error);
+      setTitlesError(true);
+    }
+  }, []);
+
   useEffect(() => {
     loadRequestId.current += 1;
     const timeoutId = setTimeout(loadContacts, searchTerm ? 300 : 0);
@@ -103,9 +117,12 @@ function Home({ onProfile }) {
   }, [loadContacts, searchTerm]);
 
   useEffect(() => {
-    contactApi.get("/contacts/titles")
+    requestTitles()
       .then((response) => setTitles(response.data))
-      .catch((error) => console.error("Error loading contact titles:", error));
+      .catch((error) => {
+        console.error("Error loading contact titles:", error);
+        setTitlesError(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -173,9 +190,7 @@ function Home({ onProfile }) {
         );
       });
       void loadContacts();
-      contactApi.get("/contacts/titles")
-        .then((titlesResponse) => setTitles(titlesResponse.data))
-        .catch((error) => console.error("Error refreshing contact titles:", error));
+      void loadTitles();
       toast.success("Contact added successfully!", {
         duration: 4000,
         position: "top-right",
@@ -243,9 +258,7 @@ function Home({ onProfile }) {
         ),
       );
       void loadContacts();
-      contactApi.get("/contacts/titles")
-        .then((titlesResponse) => setTitles(titlesResponse.data))
-        .catch((error) => console.error("Error refreshing contact titles:", error));
+      void loadTitles();
       toast.success("Contact updated successfully!", {
         duration: 4000,
         position: "top-right",
@@ -321,11 +334,13 @@ function Home({ onProfile }) {
     try {
       await contactApi.delete(`/contacts/${contactToDelete.id}`);
       contactsVersion.current += 1;
-      setContacts((currentContacts) =>
-        currentContacts.filter(
-          (currentContact) => currentContact.id !== contactToDelete.id,
-        ),
-      );
+      const remainingElements = Math.max(0, totalElements - 1);
+      const remainingPages = Math.ceil(remainingElements / 9);
+      const pageAfterDeletion = Math.min(page, Math.max(0, remainingPages - 1));
+      if (pageAfterDeletion !== page) {
+        setPage(pageAfterDeletion);
+      }
+      await loadContacts(pageAfterDeletion);
 
       if (editingContact?.id === contactToDelete.id) {
         setEditingContact(null);
@@ -472,6 +487,8 @@ function Home({ onProfile }) {
                 filterTitle={filterTitle}
                 onTitleChange={changeTitle}
                 titles={titles}
+                titlesError={titlesError}
+                onRetryTitles={loadTitles}
                 page={page}
                 totalPages={totalPages}
                 totalElements={totalElements}
@@ -482,14 +499,14 @@ function Home({ onProfile }) {
               <p className="text-[#293241]">Unable to load contacts.</p>
               <button
                 type="button"
-                onClick={loadContacts}
+                onClick={() => void loadContacts()}
                 className="mt-4 rounded-lg bg-[#16425B] px-4 py-2 font-semibold text-white hover:bg-[#3D5A80]"
               >
                 Try Again
               </button>
             </div>
           </>
-        ) : contacts.length === 0 && !searchTerm && !filterTitle ? (
+        ) : contacts.length === 0 && !searchTerm && !filterTitle && !titlesError ? (
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
           <ContactList
@@ -504,6 +521,8 @@ function Home({ onProfile }) {
             filterTitle={filterTitle}
             onTitleChange={changeTitle}
             titles={titles}
+            titlesError={titlesError}
+            onRetryTitles={loadTitles}
             page={page}
             totalPages={totalPages}
             totalElements={totalElements}

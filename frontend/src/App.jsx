@@ -33,6 +33,8 @@ function App() {
   const handleLogout = async () => {
     try {
       await logoutRequest();
+    } catch (error) {
+      console.error("Logout request failed:", error);
     } finally {
       clearAuthentication();
     }
