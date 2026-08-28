@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import ContactCard from "./ContactCard";
 import { Search, Filter, ArrowUpDown, X } from "lucide-react";
 
-function ContactList({ contacts, onEdit, isDarkMode }) {
+function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [filterTitle, setFilterTitle] = useState("");
@@ -156,7 +156,13 @@ function ContactList({ contacts, onEdit, isDarkMode }) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAndSortedContacts.map((contact) => (
-            <ContactCard key={contact.id} contact={contact} onEdit={onEdit} isDarkMode={isDarkMode} />
+            <ContactCard
+              key={contact.id}
+              contact={contact}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              isDarkMode={isDarkMode}
+            />
           ))}
         </div>
       )}
