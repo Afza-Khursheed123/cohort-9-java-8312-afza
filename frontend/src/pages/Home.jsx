@@ -334,13 +334,8 @@ function Home({ onProfile }) {
     try {
       await contactApi.delete(`/contacts/${contactToDelete.id}`);
       contactsVersion.current += 1;
-      const remainingElements = Math.max(0, totalElements - 1);
-      const remainingPages = Math.ceil(remainingElements / 9);
-      const pageAfterDeletion = Math.min(page, Math.max(0, remainingPages - 1));
-      if (pageAfterDeletion !== page) {
-        setPage(pageAfterDeletion);
-      }
-      await loadContacts(pageAfterDeletion);
+      await loadContacts(page);
+      void loadTitles();
 
       if (editingContact?.id === contactToDelete.id) {
         setEditingContact(null);
