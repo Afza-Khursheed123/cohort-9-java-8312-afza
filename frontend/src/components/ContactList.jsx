@@ -5,6 +5,7 @@ import { Search, Filter, ArrowUpDown, X } from "lucide-react";
 function ContactList({
   contacts,
   onEdit,
+  onDelete,
   isDarkMode,
   searchTerm,
   onSearchChange,
@@ -123,7 +124,13 @@ function ContactList({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {contacts.map((contact) => (
-            <ContactCard key={contact.id} contact={contact} onEdit={onEdit} isDarkMode={isDarkMode} />
+            <ContactCard
+              key={contact.id}
+              contact={contact}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              isDarkMode={isDarkMode}
+            />
           ))}
         </div>
       )}
