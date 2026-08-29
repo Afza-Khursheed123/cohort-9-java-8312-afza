@@ -29,6 +29,7 @@ function Home({ onProfile }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
+  const titleRequestId = useRef(0);
   const contactsVersion = useRef(0);
   const deleteInProgress = useRef(false);
   const deleteDialogRef = useRef(null);
@@ -100,13 +101,24 @@ function Home({ onProfile }) {
   }, [filterTitle, page, searchTerm, sortBy]);
 
   const loadTitles = useCallback(async () => {
+    const requestId = ++titleRequestId.current;
+    await Promise.resolve();
+
+    if (requestId !== titleRequestId.current) {
+      return;
+    }
+
     setTitlesError(false);
     try {
       const response = await requestTitles();
-      setTitles(response.data);
+      if (requestId === titleRequestId.current) {
+        setTitles(response.data);
+      }
     } catch (error) {
       console.error("Error loading contact titles:", error);
-      setTitlesError(true);
+      if (requestId === titleRequestId.current) {
+        setTitlesError(true);
+      }
     }
   }, []);
 
@@ -117,13 +129,13 @@ function Home({ onProfile }) {
   }, [loadContacts, searchTerm]);
 
   useEffect(() => {
-    requestTitles()
-      .then((response) => setTitles(response.data))
-      .catch((error) => {
-        console.error("Error loading contact titles:", error);
-        setTitlesError(true);
-      });
-  }, []);
+    const timeoutId = setTimeout(loadTitles, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      titleRequestId.current += 1;
+    };
+  }, [loadTitles]);
 
   useEffect(() => {
     if (!contactToDelete) {
