@@ -27,6 +27,7 @@ function Home() {
   const formRef = useRef(null);
   const loadContactsRef = useRef(null);
   const loadRequestId = useRef(0);
+  const titleRequestId = useRef(0);
   const contactsVersion = useRef(0);
   const deleteInProgress = useRef(false);
   const deleteDialogRef = useRef(null);
@@ -69,8 +70,11 @@ function Home() {
         requestId === loadRequestId.current &&
         requestContactsVersion === contactsVersion.current
       ) {
-        if (response.data.totalPages > 0 && page >= response.data.totalPages) {
-          setPage(response.data.totalPages - 1);
+        if (
+          page > 0 &&
+          (response.data.totalPages === 0 || page >= response.data.totalPages)
+        ) {
+          setPage(Math.max(response.data.totalPages - 1, 0));
           return;
         }
         setContacts(response.data.content);
@@ -97,6 +101,21 @@ function Home() {
     }
   }, [filterTitle, page, searchTerm, sortBy]);
 
+  const loadTitles = useCallback(async () => {
+    const requestId = ++titleRequestId.current;
+
+    try {
+      const response = await contactApi.get("/contacts/titles");
+      if (requestId === titleRequestId.current) {
+        setTitles(response.data);
+      }
+    } catch (error) {
+      if (requestId === titleRequestId.current) {
+        console.error("Error loading contact titles:", error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     loadContactsRef.current = loadContacts;
   }, [loadContacts]);
@@ -108,10 +127,13 @@ function Home() {
   }, [loadContacts, searchTerm]);
 
   useEffect(() => {
-    contactApi.get("/contacts/titles")
-      .then((response) => setTitles(response.data))
-      .catch((error) => console.error("Error loading contact titles:", error));
-  }, []);
+    const timeoutId = setTimeout(loadTitles, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      titleRequestId.current += 1;
+    };
+  }, [loadTitles]);
 
   const changeSearch = (value) => {
     setSearchTerm(value);
@@ -178,9 +200,7 @@ function Home() {
         );
       });
       void loadContactsRef.current();
-      contactApi.get("/contacts/titles")
-        .then((titlesResponse) => setTitles(titlesResponse.data))
-        .catch((error) => console.error("Error refreshing contact titles:", error));
+      void loadTitles();
       toast.success("Contact added successfully!", {
         duration: 4000,
         position: "top-right",
@@ -248,9 +268,7 @@ function Home() {
         ),
       );
       void loadContactsRef.current();
-      contactApi.get("/contacts/titles")
-        .then((titlesResponse) => setTitles(titlesResponse.data))
-        .catch((error) => console.error("Error refreshing contact titles:", error));
+      void loadTitles();
       toast.success("Contact updated successfully!", {
         duration: 4000,
         position: "top-right",
@@ -349,9 +367,7 @@ function Home() {
       });
       setContactToDelete(null);
       void loadContactsRef.current();
-      contactApi.get("/contacts/titles")
-        .then((titlesResponse) => setTitles(titlesResponse.data))
-        .catch((error) => console.error("Error refreshing contact titles:", error));
+      void loadTitles();
     } catch (error) {
       console.error("Error deleting contact:", error);
       const message =
