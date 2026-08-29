@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,21 +50,32 @@ class ConcurrentUserRegistrationIntegrationTests {
                     executor.submit(() -> registerWhenReleased(request, ready, start)),
                     executor.submit(() -> registerWhenReleased(request, ready, start)));
 
-            ready.await();
-            start.countDown();
+            try {
+                assertThat(ready.await(5, TimeUnit.SECONDS))
+                        .as("registration workers became ready")
+                        .isTrue();
+                start.countDown();
 
-            RegistrationResponse first = results.get(0).get();
-            RegistrationResponse second = results.get(1).get();
+                RegistrationResponse first = results.get(0).get(10, TimeUnit.SECONDS);
+                RegistrationResponse second = results.get(1).get(10, TimeUnit.SECONDS);
 
-            assertThat(first).isEqualTo(second);
-            assertThat(userRepository.count()).isEqualTo(1);
+                assertThat(first).isEqualTo(second);
+                assertThat(userRepository.count()).isEqualTo(1);
+            } finally {
+                start.countDown();
+                results.stream()
+                        .filter(result -> !result.isDone())
+                        .forEach(result -> result.cancel(true));
+            }
         }
     }
 
     private RegistrationResponse registerWhenReleased(RegistrationRequest request,
             CountDownLatch ready, CountDownLatch start) throws InterruptedException {
         ready.countDown();
-        start.await();
+        if (!start.await(5, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Timed out waiting to start concurrent registration");
+        }
         return registrationService.register(request);
     }
 }

@@ -58,6 +58,7 @@ class UserRegistrationServiceTests {
 
         assertThat(response.message())
                 .isEqualTo("If the provided contact information is eligible, registration has been accepted");
+        verify(registrationWriter).insert(any(User.class));
     }
 
     @Test
