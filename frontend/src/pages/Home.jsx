@@ -16,6 +16,7 @@ function Home() {
   const [filterTitle, setFilterTitle] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [titles, setTitles] = useState([]);
+  const [titlesError, setTitlesError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,6 +104,7 @@ function Home() {
 
   const loadTitles = useCallback(async () => {
     const requestId = ++titleRequestId.current;
+    setTitlesError(false);
 
     try {
       const response = await contactApi.get("/contacts/titles");
@@ -112,6 +114,7 @@ function Home() {
     } catch (error) {
       if (requestId === titleRequestId.current) {
         console.error("Error loading contact titles:", error);
+        setTitlesError(true);
       }
     }
   }, []);
@@ -490,6 +493,8 @@ function Home() {
                 filterTitle={filterTitle}
                 onTitleChange={changeTitle}
                 titles={titles}
+                titlesError={titlesError}
+                onRetryTitles={loadTitles}
                 page={page}
                 totalPages={totalPages}
                 totalElements={totalElements}
@@ -507,7 +512,7 @@ function Home() {
               </button>
             </div>
           </>
-        ) : contacts.length === 0 && !searchTerm && !filterTitle ? (
+        ) : contacts.length === 0 && !searchTerm && !filterTitle && !titlesError ? (
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
           <ContactList
@@ -522,6 +527,8 @@ function Home() {
             filterTitle={filterTitle}
             onTitleChange={changeTitle}
             titles={titles}
+            titlesError={titlesError}
+            onRetryTitles={loadTitles}
             page={page}
             totalPages={totalPages}
             totalElements={totalElements}
