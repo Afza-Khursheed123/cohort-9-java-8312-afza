@@ -3,6 +3,7 @@ package com.contactmanager.backend.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,12 +23,14 @@ import com.contactmanager.backend.repository.UserRepository;
 class UserRegistrationServiceTests {
 
     private UserRepository userRepository;
+    private UserRegistrationWriter registrationWriter;
     private UserRegistrationService service;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
-        service = new UserRegistrationService(userRepository);
+        registrationWriter = mock(UserRegistrationWriter.class);
+        service = new UserRegistrationService(userRepository, registrationWriter);
     }
 
     @Test
@@ -36,9 +39,6 @@ class UserRegistrationServiceTests {
         when(userRepository.existsByIdentifier("user@example.com"))
                 .thenReturn(false)
                 .thenReturn(true);
-        when(userRepository.saveAndFlush(any(User.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
         RegistrationResponse newIdentifierResponse = service.register(request);
         RegistrationResponse existingIdentifierResponse = service.register(request);
 
@@ -51,8 +51,8 @@ class UserRegistrationServiceTests {
     @Test
     void returnsGenericAcceptedResponseWhenUniqueConstraintDetectsDuplicate() {
         when(userRepository.existsByIdentifier("user@example.com")).thenReturn(false);
-        when(userRepository.saveAndFlush(any(User.class)))
-                .thenThrow(new DataIntegrityViolationException("duplicate"));
+        doThrow(new DataIntegrityViolationException("duplicate"))
+                .when(registrationWriter).insert(any(User.class));
 
         RegistrationResponse response = service.register(request());
 
@@ -68,7 +68,7 @@ class UserRegistrationServiceTests {
         assertThatThrownBy(() -> service.register(request()))
                 .isInstanceOf(RegistrationPersistenceException.class)
                 .hasMessage("Unable to persist registration");
-        verify(userRepository, never()).saveAndFlush(any(User.class));
+        verify(registrationWriter, never()).insert(any(User.class));
     }
 
     private RegistrationRequest request() {

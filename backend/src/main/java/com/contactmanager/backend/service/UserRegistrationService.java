@@ -7,7 +7,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.contactmanager.backend.dto.RegistrationRequest;
 import com.contactmanager.backend.dto.RegistrationResponse;
@@ -20,13 +19,14 @@ import com.contactmanager.backend.repository.UserRepository;
 public class UserRegistrationService {
 
     private final UserRepository userRepository;
+    private final UserRegistrationWriter registrationWriter;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public UserRegistrationService(UserRepository userRepository) {
+    public UserRegistrationService(UserRepository userRepository, UserRegistrationWriter registrationWriter) {
         this.userRepository = userRepository;
+        this.registrationWriter = registrationWriter;
     }
 
-    @Transactional
     public RegistrationResponse register(RegistrationRequest request) {
         boolean usesEmail = request.email() != null && !request.email().isBlank();
         String identifier = usesEmail
@@ -49,7 +49,7 @@ public class UserRegistrationService {
                 passwordEncoder.encode(request.password()));
 
         try {
-            userRepository.saveAndFlush(user);
+            registrationWriter.insert(user);
             return registrationAccepted();
         } catch (DataIntegrityViolationException exception) {
             return registrationAccepted();
