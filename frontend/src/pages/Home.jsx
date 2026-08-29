@@ -3,6 +3,7 @@ import { Toaster, toast } from "react-hot-toast";
 import contactApi from "../api/contactApi";
 import ContactForm from "../components/ContactForm";
 import ContactList from "../components/ContactList";
+import ContactProfile from "../components/ContactProfile";
 import LoadingSpinner from "../components/LoadingSpinner";
 import EmptyState from "../components/EmptyState";
 import { Users, Plus, Moon, Sun, Trash2, X, CircleUserRound } from "lucide-react";
@@ -26,6 +27,7 @@ function Home({ onProfile }) {
   const [editingContact, setEditingContact] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
+  const [profileContact, setProfileContact] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
@@ -34,6 +36,9 @@ function Home({ onProfile }) {
   const deleteDialogRef = useRef(null);
   const deleteDialogInitialFocusRef = useRef(null);
   const deleteTriggerRef = useRef(null);
+  const profileDialogRef = useRef(null);
+  const profileCloseRef = useRef(null);
+  const profileTriggerRef = useRef(null);
   const editFormData = useMemo(
     () =>
       editingContact
@@ -41,8 +46,8 @@ function Home({ onProfile }) {
             firstName: editingContact.firstName || "",
             lastName: editingContact.lastName || "",
             title: editingContact.title || "",
-            email: editingContact.emailAddresses?.[0]?.email || "",
-            phone: editingContact.phoneNumbers?.[0]?.phoneNumber || "",
+            emailAddresses: editingContact.emailAddresses || [],
+            phoneNumbers: editingContact.phoneNumbers || [],
           }
         : null,
     [editingContact],
@@ -139,6 +144,12 @@ function Home({ onProfile }) {
     };
   }, [contactToDelete]);
 
+  useEffect(() => {
+    if (!profileContact) return undefined;
+    profileCloseRef.current?.focus();
+    return () => profileTriggerRef.current?.isConnected && profileTriggerRef.current.focus();
+  }, [profileContact]);
+
   const changeSearch = (value) => {
     setSearchTerm(value);
     setPage(0);
@@ -155,23 +166,7 @@ function Home({ onProfile }) {
   };
 
   const saveContact = async (data) => {
-    const contact = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      title: data.title,
-      emailAddresses: [
-        {
-          email: data.email,
-          label: "Personal",
-        },
-      ],
-      phoneNumbers: [
-        {
-          phoneNumber: data.phone,
-          label: "Mobile",
-        },
-      ],
-    };
+    const contact = data;
 
     try {
       const response = await contactApi.post("/contacts", contact);
@@ -225,24 +220,7 @@ function Home({ onProfile }) {
       return;
     }
 
-    const contact = {
-      firstName: data.firstName,
-      lastName: data.lastName,
-      title: data.title,
-      emailAddresses: editingContact.emailAddresses?.length
-        ? editingContact.emailAddresses.map((emailAddress, index) => ({
-            email: index === 0 ? data.email : emailAddress.email,
-            label: emailAddress.label || "Personal",
-          }))
-        : [{ email: data.email, label: "Personal" }],
-      phoneNumbers: editingContact.phoneNumbers?.length
-        ? editingContact.phoneNumbers.map((phoneNumber, index) => ({
-            phoneNumber:
-              index === 0 ? data.phone : phoneNumber.phoneNumber,
-            label: phoneNumber.label || "Mobile",
-          }))
-        : [{ phoneNumber: data.phone, label: "Mobile" }],
-    };
+    const contact = data;
 
     try {
       const response = await contactApi.put(
@@ -283,6 +261,20 @@ function Home({ onProfile }) {
     setEditingContact(contact);
     setShowForm(true);
     setTimeout(scrollToForm, 100);
+  };
+
+  const viewContact = (contact) => {
+    profileTriggerRef.current = document.activeElement;
+    setProfileContact(contact);
+  };
+
+  const handleProfileKeyDown = (event) => {
+    if (event.key === "Escape") setProfileContact(null);
+    if (event.key !== "Tab") return;
+    const elements = Array.from(profileDialogRef.current?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []);
+    if (!elements.length) return;
+    if (event.shiftKey && document.activeElement === elements[0]) { event.preventDefault(); elements.at(-1).focus(); }
+    else if (!event.shiftKey && document.activeElement === elements.at(-1)) { event.preventDefault(); elements[0].focus(); }
   };
 
   const cancelEdit = () => {
@@ -472,6 +464,7 @@ function Home({ onProfile }) {
             {contacts.length > 0 && (
               <ContactList
                 contacts={contacts}
+                onView={viewContact}
                 onEdit={editContact}
                 onDelete={openDeleteDialog}
                 isDarkMode={isDarkMode}
@@ -506,6 +499,7 @@ function Home({ onProfile }) {
         ) : (
           <ContactList
             contacts={contacts}
+            onView={viewContact}
             onEdit={editContact}
             onDelete={openDeleteDialog}
             isDarkMode={isDarkMode}
@@ -525,6 +519,8 @@ function Home({ onProfile }) {
           />
         )}
       </div>
+
+      {profileContact && <ContactProfile contact={profileContact} onClose={() => setProfileContact(null)} isDarkMode={isDarkMode} dialogRef={profileDialogRef} closeRef={profileCloseRef} onKeyDown={handleProfileKeyDown} />}
 
       {contactToDelete && (
         <div
