@@ -28,6 +28,8 @@ function Home({ onProfile }) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [contactToDelete, setContactToDelete] = useState(null);
   const [profileContact, setProfileContact] = useState(null);
+  const [profileState, setProfileState] = useState("idle");
+  const [profileError, setProfileError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
@@ -40,6 +42,7 @@ function Home({ onProfile }) {
   const profileDialogRef = useRef(null);
   const profileCloseRef = useRef(null);
   const profileTriggerRef = useRef(null);
+  const profileRequestId = useRef(0);
   const editFormData = useMemo(
     () =>
       editingContact
@@ -268,13 +271,43 @@ function Home({ onProfile }) {
     setTimeout(scrollToForm, 100);
   };
 
+  const loadContactProfile = async (contactId) => {
+    const requestId = ++profileRequestId.current;
+    setProfileState("loading");
+    setProfileError("");
+    try {
+      const response = await contactApi.get(`/contacts/${contactId}`);
+      if (requestId === profileRequestId.current) {
+        setProfileContact(response.data);
+        setProfileState("ready");
+      }
+    } catch (error) {
+      if (requestId === profileRequestId.current) {
+        setProfileState("error");
+        setProfileError(
+          error.response?.status === 404
+            ? "This contact no longer exists."
+            : "Unable to load this contact. Please try again.",
+        );
+      }
+    }
+  };
+
   const viewContact = (contact) => {
     profileTriggerRef.current = document.activeElement;
     setProfileContact(contact);
+    void loadContactProfile(contact.id);
+  };
+
+  const closeContactProfile = () => {
+    profileRequestId.current += 1;
+    setProfileContact(null);
+    setProfileState("idle");
+    setProfileError("");
   };
 
   const handleProfileKeyDown = (event) => {
-    if (event.key === "Escape") setProfileContact(null);
+    if (event.key === "Escape") closeContactProfile();
     if (event.key !== "Tab") return;
     const elements = Array.from(profileDialogRef.current?.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []);
     if (!elements.length) return;
@@ -525,7 +558,7 @@ function Home({ onProfile }) {
         )}
       </div>
 
-      {profileContact && <ContactProfile contact={profileContact} onClose={() => setProfileContact(null)} isDarkMode={isDarkMode} dialogRef={profileDialogRef} closeRef={profileCloseRef} onKeyDown={handleProfileKeyDown} />}
+      {profileContact && <ContactProfile contact={profileContact} state={profileState} error={profileError} onRetry={() => void loadContactProfile(profileContact.id)} onClose={closeContactProfile} isDarkMode={isDarkMode} dialogRef={profileDialogRef} closeRef={profileCloseRef} onKeyDown={handleProfileKeyDown} />}
 
       {contactToDelete && (
         <div
