@@ -3,25 +3,38 @@
 -- fails without changing data if that identifier does not name exactly one user.
 
 SET XACT_ABORT ON;
-BEGIN TRANSACTION;
+BEGIN TRY
+    BEGIN TRANSACTION;
 
-DECLARE @legacy_owner_identifier nvarchar(254) = N'$(LegacyContactOwnerIdentifier)';
-DECLARE @legacy_owner_id bigint;
+    DECLARE @legacy_owner_identifier nvarchar(254) = N'$(LegacyContactOwnerIdentifier)';
+    DECLARE @legacy_owner_id bigint;
 
-IF (SELECT COUNT(*) FROM users WHERE identifier = @legacy_owner_identifier) <> 1
-    THROW 50001, 'LegacyContactOwnerIdentifier must identify exactly one existing user.', 1;
+    IF (SELECT COUNT(*) FROM users WHERE identifier = @legacy_owner_identifier) <> 1
+        THROW 50001, 'LegacyContactOwnerIdentifier must identify exactly one existing user.', 1;
 
-SELECT @legacy_owner_id = id
-FROM users
-WHERE identifier = @legacy_owner_identifier;
+    SELECT @legacy_owner_id = id
+    FROM users
+    WHERE identifier = @legacy_owner_identifier;
 
-UPDATE contacts
-SET owner_id = @legacy_owner_id
-WHERE owner_id IS NULL;
+    IF COL_LENGTH(N'contacts', N'owner_id') IS NULL
+        ALTER TABLE contacts ADD owner_id bigint NULL;
 
-IF EXISTS (SELECT 1 FROM contacts WHERE owner_id IS NULL)
-    THROW 50002, 'Contact owner backfill did not assign every legacy contact.', 1;
+    -- Compile the backfill only after owner_id exists.
+    EXEC sp_executesql
+        N'UPDATE contacts SET owner_id = @owner_id WHERE owner_id IS NULL;
 
-ALTER TABLE contacts ALTER COLUMN owner_id bigint NOT NULL;
+          IF EXISTS (SELECT 1 FROM contacts WHERE owner_id IS NULL)
+              THROW 50002, ''Contact owner backfill did not assign every legacy contact.'', 1;',
+        N'@owner_id bigint',
+        @owner_id = @legacy_owner_id;
 
-COMMIT TRANSACTION;
+    ALTER TABLE contacts ALTER COLUMN owner_id bigint NOT NULL;
+
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0
+        ROLLBACK TRANSACTION;
+
+    THROW;
+END CATCH;
