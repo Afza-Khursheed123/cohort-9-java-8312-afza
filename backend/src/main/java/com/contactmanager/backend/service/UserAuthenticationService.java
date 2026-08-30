@@ -2,6 +2,8 @@ package com.contactmanager.backend.service;
 
 import java.util.Locale;
 
+import org.springframework.dao.DataAccessException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,8 +24,14 @@ public class UserAuthenticationService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String suppliedIdentifier) throws UsernameNotFoundException {
         String identifier = normalizeIdentifier(suppliedIdentifier);
-        User user = userRepository.findByIdentifier(identifier)
-                .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
+        User user;
+        try {
+            user = userRepository.findByIdentifier(identifier)
+                    .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
+        } catch (DataAccessException exception) {
+            throw new InternalAuthenticationServiceException(
+                    "The authentication data store is temporarily unavailable", exception);
+        }
         return new AuthenticatedUser(user.getId(), user.getIdentifier(), user.getPasswordHash());
     }
 

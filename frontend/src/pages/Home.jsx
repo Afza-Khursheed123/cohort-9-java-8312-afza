@@ -30,6 +30,7 @@ function Home({ onProfile }) {
   const [profileContact, setProfileContact] = useState(null);
   const [profileState, setProfileState] = useState("idle");
   const [profileError, setProfileError] = useState("");
+  const isProfileOpen = Boolean(profileContact);
   const [isDeleting, setIsDeleting] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
@@ -153,10 +154,10 @@ function Home({ onProfile }) {
   }, [contactToDelete]);
 
   useEffect(() => {
-    if (!profileContact) return undefined;
+    if (!isProfileOpen) return undefined;
     profileCloseRef.current?.focus();
     return () => profileTriggerRef.current?.isConnected && profileTriggerRef.current.focus();
-  }, [profileContact]);
+  }, [isProfileOpen]);
 
   const changeSearch = (value) => {
     setSearchTerm(value);
@@ -402,6 +403,27 @@ function Home({ onProfile }) {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const contactListProps = {
+    contacts,
+    onView: viewContact,
+    onEdit: editContact,
+    onDelete: openDeleteDialog,
+    isDarkMode,
+    searchTerm,
+    onSearchChange: changeSearch,
+    sortBy,
+    onSortChange: changeSort,
+    filterTitle,
+    onTitleChange: changeTitle,
+    titles,
+    titlesError,
+    onRetryTitles: loadTitles,
+    page,
+    totalPages,
+    totalElements,
+    onPageChange: setPage,
+  };
+
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
@@ -501,24 +523,7 @@ function Home({ onProfile }) {
           <>
             {contacts.length > 0 && (
               <ContactList
-                contacts={contacts}
-                onView={viewContact}
-                onEdit={editContact}
-                onDelete={openDeleteDialog}
-                isDarkMode={isDarkMode}
-                searchTerm={searchTerm}
-                onSearchChange={changeSearch}
-                sortBy={sortBy}
-                onSortChange={changeSort}
-                filterTitle={filterTitle}
-                onTitleChange={changeTitle}
-                titles={titles}
-                titlesError={titlesError}
-                onRetryTitles={loadTitles}
-                page={page}
-                totalPages={totalPages}
-                totalElements={totalElements}
-                onPageChange={setPage}
+                {...contactListProps}
               />
             )}
             <div className="rounded-lg border border-[#EE6C4D] bg-white p-6 text-center">
@@ -536,24 +541,7 @@ function Home({ onProfile }) {
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
           <ContactList
-            contacts={contacts}
-            onView={viewContact}
-            onEdit={editContact}
-            onDelete={openDeleteDialog}
-            isDarkMode={isDarkMode}
-            searchTerm={searchTerm}
-            onSearchChange={changeSearch}
-            sortBy={sortBy}
-            onSortChange={changeSort}
-            filterTitle={filterTitle}
-            onTitleChange={changeTitle}
-            titles={titles}
-            titlesError={titlesError}
-            onRetryTitles={loadTitles}
-            page={page}
-            totalPages={totalPages}
-            totalElements={totalElements}
-            onPageChange={setPage}
+            {...contactListProps}
           />
         )}
       </div>

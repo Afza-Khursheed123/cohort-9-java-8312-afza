@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -20,6 +22,17 @@ public class AuthenticationExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ApiError> handleBadCredentials() {
         return error(HttpStatus.UNAUTHORIZED, "Email/phone number or password is incorrect", Map.of());
+    }
+
+    @ExceptionHandler(InternalAuthenticationServiceException.class)
+    public ResponseEntity<ApiError> handleAuthenticationServiceFailure() {
+        return error(HttpStatus.SERVICE_UNAVAILABLE,
+                "Authentication is temporarily unavailable. Please try again later.", Map.of());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiError> handleAuthenticationFailure() {
+        return error(HttpStatus.UNAUTHORIZED, "Authentication failed", Map.of());
     }
 
     @ExceptionHandler(InvalidCurrentPasswordException.class)
