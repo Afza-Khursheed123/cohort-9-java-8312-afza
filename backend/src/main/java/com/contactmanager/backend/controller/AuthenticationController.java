@@ -2,6 +2,8 @@ package com.contactmanager.backend.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,6 +31,8 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthenticationController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
@@ -59,7 +63,10 @@ public class AuthenticationController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
-        return profileService.getProfile(principal(authentication).userId());
+        Long userId = principal(authentication).userId();
+        UserProfileResponse profile = profileService.getProfile(userId);
+        logger.info("User logged in successfully: userId={}", userId);
+        return profile;
     }
 
     @GetMapping("/session")
@@ -69,12 +76,16 @@ public class AuthenticationController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(HttpServletRequest request) {
+    public ResponseEntity<Void> logout(HttpServletRequest request, Authentication authentication) {
+        Long userId = authentication != null && authentication.getPrincipal() instanceof AuthenticatedUser user
+                ? user.userId()
+                : null;
         HttpSession session = request.getSession(false);
         SecurityContextHolder.clearContext();
         if (session != null) {
             session.invalidate();
         }
+        logger.info("User logged out successfully: userId={}", userId);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
