@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail, Phone, UserRound, XCircle } from "lucide-react";
 import { registerUser } from "../api/registrationApi";
+import { getSession } from "../api/authApi";
 
 const initialForm = {
   firstName: "",
@@ -12,7 +13,7 @@ const initialForm = {
   confirmPassword: "",
 };
 
-function Registration({ onBack }) {
+function Registration({ onBack, onRegistration }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [feedback, setFeedback] = useState(null);
@@ -69,10 +70,9 @@ function Registration({ onBack }) {
         phone: form.contactMethod === "phone" ? form.phone.trim() : null,
         password: form.password,
       };
-      const response = await registerUser(payload);
-      setFeedback({ type: "success", message: response.data.message || "Registration successful" });
-      setForm(initialForm);
-      setErrors({});
+      await registerUser(payload);
+      const { data: profile } = await getSession();
+      onRegistration(profile);
     } catch (error) {
       const response = error.response;
       if (response?.status === 400 && response.data?.errors) {
