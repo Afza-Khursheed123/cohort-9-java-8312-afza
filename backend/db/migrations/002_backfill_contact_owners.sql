@@ -1,16 +1,18 @@
 -- Run this SQL Server rollout migration before deploying owner-scoped contact access.
--- Supply LegacyContactOwnerIdentifier with sqlcmd's -v option. The transaction
--- fails without changing data if that identifier does not name exactly one user.
+-- Supply LegacyContactOwnerIdentifierSqlEscaped with sqlcmd's -v option after
+-- escaping each single quote as two single quotes. See README.md for the safe
+-- invocation. The transaction fails without changing data if that identifier
+-- does not name exactly one user.
 
 SET XACT_ABORT ON;
 BEGIN TRY
     BEGIN TRANSACTION;
 
-    DECLARE @legacy_owner_identifier nvarchar(254) = N'$(LegacyContactOwnerIdentifier)';
+    DECLARE @legacy_owner_identifier nvarchar(254) = N'$(LegacyContactOwnerIdentifierSqlEscaped)';
     DECLARE @legacy_owner_id bigint;
 
     IF (SELECT COUNT(*) FROM users WHERE identifier = @legacy_owner_identifier) <> 1
-        THROW 50001, 'LegacyContactOwnerIdentifier must identify exactly one existing user.', 1;
+        THROW 50001, 'LegacyContactOwnerIdentifierSqlEscaped must identify exactly one existing user.', 1;
 
     SELECT @legacy_owner_id = id
     FROM users
