@@ -43,6 +43,7 @@ function Home({ onProfile }) {
   const profileCloseRef = useRef(null);
   const profileTriggerRef = useRef(null);
   const profileRequestId = useRef(0);
+  const profileContactId = profileContact?.id;
   const editFormData = useMemo(
     () =>
       editingContact
@@ -153,10 +154,10 @@ function Home({ onProfile }) {
   }, [contactToDelete]);
 
   useEffect(() => {
-    if (!profileContact) return undefined;
+    if (profileContactId == null) return undefined;
     profileCloseRef.current?.focus();
     return () => profileTriggerRef.current?.isConnected && profileTriggerRef.current.focus();
-  }, [profileContact]);
+  }, [profileContactId]);
 
   const changeSearch = (value) => {
     setSearchTerm(value);
@@ -402,6 +403,27 @@ function Home({ onProfile }) {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const contactListProps = {
+    contacts,
+    onView: viewContact,
+    onEdit: editContact,
+    onDelete: openDeleteDialog,
+    isDarkMode,
+    searchTerm,
+    onSearchChange: changeSearch,
+    sortBy,
+    onSortChange: changeSort,
+    filterTitle,
+    onTitleChange: changeTitle,
+    titles,
+    titlesError,
+    onRetryTitles: loadTitles,
+    page,
+    totalPages,
+    totalElements,
+    onPageChange: setPage,
+  };
+
   return (
     <div
       className={`min-h-screen transition-colors duration-300 ${
@@ -500,26 +522,7 @@ function Home({ onProfile }) {
         ) : loadError ? (
           <>
             {contacts.length > 0 && (
-              <ContactList
-                contacts={contacts}
-                onView={viewContact}
-                onEdit={editContact}
-                onDelete={openDeleteDialog}
-                isDarkMode={isDarkMode}
-                searchTerm={searchTerm}
-                onSearchChange={changeSearch}
-                sortBy={sortBy}
-                onSortChange={changeSort}
-                filterTitle={filterTitle}
-                onTitleChange={changeTitle}
-                titles={titles}
-                titlesError={titlesError}
-                onRetryTitles={loadTitles}
-                page={page}
-                totalPages={totalPages}
-                totalElements={totalElements}
-                onPageChange={setPage}
-              />
+              <ContactList {...contactListProps} />
             )}
             <div className="rounded-lg border border-[#EE6C4D] bg-white p-6 text-center">
               <p className="text-[#293241]">Unable to load contacts.</p>
@@ -535,26 +538,7 @@ function Home({ onProfile }) {
         ) : contacts.length === 0 && !searchTerm && !filterTitle && !titlesError ? (
           <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
         ) : (
-          <ContactList
-            contacts={contacts}
-            onView={viewContact}
-            onEdit={editContact}
-            onDelete={openDeleteDialog}
-            isDarkMode={isDarkMode}
-            searchTerm={searchTerm}
-            onSearchChange={changeSearch}
-            sortBy={sortBy}
-            onSortChange={changeSort}
-            filterTitle={filterTitle}
-            onTitleChange={changeTitle}
-            titles={titles}
-            titlesError={titlesError}
-            onRetryTitles={loadTitles}
-            page={page}
-            totalPages={totalPages}
-            totalElements={totalElements}
-            onPageChange={setPage}
-          />
+          <ContactList {...contactListProps} />
         )}
       </div>
 

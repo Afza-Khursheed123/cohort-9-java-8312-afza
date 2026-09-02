@@ -35,9 +35,29 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
     setFormData((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   };
-  const setItem = (collection, index, field, value) => setFormData((current) => ({ ...current, [collection]: current[collection].map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item) }));
+  const itemErrorKey = (collection, index, field) => `${collection === "emailAddresses" ? "email" : "phone"}${field === "label" ? "-label" : ""}-${index}`;
+  const setItem = (collection, index, field, value) => {
+    setFormData((current) => ({ ...current, [collection]: current[collection].map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item) }));
+    setErrors((current) => {
+      const next = { ...current };
+      delete next[itemErrorKey(collection, index, field)];
+      return next;
+    });
+  };
   const addItem = (collection) => setFormData((current) => ({ ...current, [collection]: [...current[collection], collection === "emailAddresses" ? newEmail() : newPhone()] }));
-  const removeItem = (collection, index) => setFormData((current) => ({ ...current, [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index) }));
+  const removeItem = (collection, index) => {
+    setFormData((current) => ({ ...current, [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index) }));
+    setErrors((current) => {
+      const prefix = collection === "emailAddresses" ? "email" : "phone";
+      return Object.fromEntries(Object.entries(current).flatMap(([key, value]) => {
+        const match = key.match(new RegExp(`^(${prefix}(?:-label)?)-(\\d+)$`));
+        if (!match) return [[key, value]];
+        const errorIndex = Number(match[2]);
+        if (errorIndex === index) return [];
+        return [[errorIndex > index ? `${match[1]}-${errorIndex - 1}` : key, value]];
+      }));
+    });
+  };
   const submit = async (event) => {
     event.preventDefault();
     if (isSubmitting || submissionInProgress.current || !validate()) return;
