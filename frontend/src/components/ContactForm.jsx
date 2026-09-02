@@ -20,7 +20,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
     if (!formData.firstName.trim()) next.firstName = "First name is required";
     formData.emailAddresses.forEach((item, index) => {
       if (!item.email.trim()) return;
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email)) next[`email-${index}`] = "Enter a valid email address";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.email.trim())) next[`email-${index}`] = "Enter a valid email address";
       if (!item.label.trim()) next[`email-label-${index}`] = "Label is required";
     });
     formData.phoneNumbers.forEach((item, index) => {

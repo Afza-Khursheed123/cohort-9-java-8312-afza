@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.contactmanager.backend.entity.Contact;
 import com.contactmanager.backend.entity.EmailAddress;
@@ -131,6 +134,46 @@ class ContactServiceTests {
     }
 
     @Test
+    void updateRejectsEmailIdOwnedByAnotherUsersContact() {
+        Contact usersContact = new Contact();
+        EmailAddress usersEmail = email("mine@example.com", "Personal");
+        setId(usersEmail, 10L);
+        usersContact.getEmailAddresses().add(usersEmail);
+
+        EmailAddress otherUsersEmail = email("other@example.com", "Work");
+        setId(otherUsersEmail, 11L);
+
+        Contact maliciousUpdate = new Contact();
+        maliciousUpdate.getEmailAddresses().add(otherUsersEmail);
+        when(contactRepository.findByIdAndOwnerId(22L, 7L)).thenReturn(Optional.of(usersContact));
+
+        assertThrows(ResponseStatusException.class,
+                () -> service.updateContact(7L, 22L, maliciousUpdate));
+        assertSame(usersEmail, usersContact.getEmailAddresses().get(0));
+        verify(contactRepository, never()).save(any());
+    }
+
+    @Test
+    void updateRejectsPhoneIdOwnedByAnotherUsersContact() {
+        Contact usersContact = new Contact();
+        PhoneNumber usersPhone = phone("11111111", "Personal");
+        setId(usersPhone, 20L);
+        usersContact.getPhoneNumbers().add(usersPhone);
+
+        PhoneNumber otherUsersPhone = phone("22222222", "Work");
+        setId(otherUsersPhone, 21L);
+
+        Contact maliciousUpdate = new Contact();
+        maliciousUpdate.getPhoneNumbers().add(otherUsersPhone);
+        when(contactRepository.findByIdAndOwnerId(22L, 7L)).thenReturn(Optional.of(usersContact));
+
+        assertThrows(ResponseStatusException.class,
+                () -> service.updateContact(7L, 22L, maliciousUpdate));
+        assertSame(usersPhone, usersContact.getPhoneNumbers().get(0));
+        verify(contactRepository, never()).save(any());
+    }
+
+    @Test
     void deleteDoesNotRevealOrDeleteAnotherUsersContact() {
         when(contactRepository.findByIdAndOwnerId(22L, 7L)).thenReturn(Optional.empty());
 
@@ -150,5 +193,15 @@ class ContactServiceTests {
         phone.setPhoneNumber(value);
         phone.setLabel(label);
         return phone;
+    }
+
+    private void setId(Object entity, Long id) {
+        try {
+            Field field = entity.getClass().getDeclaredField("id");
+            field.setAccessible(true);
+            field.set(entity, id);
+        } catch (ReflectiveOperationException exception) {
+            throw new AssertionError(exception);
+        }
     }
 }
