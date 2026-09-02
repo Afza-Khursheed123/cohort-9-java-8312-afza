@@ -13,18 +13,14 @@ import com.contactmanager.backend.dto.RegistrationResponse;
 import com.contactmanager.backend.entity.User;
 import com.contactmanager.backend.entity.User.IdentifierType;
 import com.contactmanager.backend.exception.RegistrationPersistenceException;
-import com.contactmanager.backend.repository.UserRepository;
 
 @Service
 public class UserRegistrationService {
 
-    private final UserRepository userRepository;
     private final UserRegistrationWriter registrationWriter;
     private final PasswordEncoder passwordEncoder;
 
-    public UserRegistrationService(UserRepository userRepository, UserRegistrationWriter registrationWriter,
-            PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
+    public UserRegistrationService(UserRegistrationWriter registrationWriter, PasswordEncoder passwordEncoder) {
         this.registrationWriter = registrationWriter;
         this.passwordEncoder = passwordEncoder;
     }
@@ -34,14 +30,6 @@ public class UserRegistrationService {
         String identifier = usesEmail
                 ? request.email().trim().toLowerCase(Locale.ROOT)
                 : request.phone().trim();
-
-        try {
-            if (userRepository.existsByIdentifier(identifier)) {
-                return registrationAccepted();
-            }
-        } catch (DataAccessException exception) {
-            throw persistenceFailure(exception);
-        }
 
         User user = new User(
                 request.firstName().trim(),

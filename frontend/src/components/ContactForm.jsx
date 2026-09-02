@@ -44,6 +44,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
     submissionInProgress.current = true;
     setIsSubmitting(true);
     try { await onSave({ ...formData, firstName: formData.firstName.trim(), lastName: formData.lastName.trim(), title: formData.title.trim(), emailAddresses: formData.emailAddresses.map((item) => ({ email: item.email.trim(), label: item.label.trim() })), phoneNumbers: formData.phoneNumbers.map((item) => ({ phoneNumber: item.phoneNumber.trim(), label: item.label.trim() })) }); }
+    catch { setIsSubmitting(false); }
     finally { submissionInProgress.current = false; }
   };
   const error = (key) => errors[key] && <p className="mt-1 text-sm text-[#EE6C4D]" role="alert"><X className="mr-1 inline h-4 w-4" />{errors[key]}</p>;
