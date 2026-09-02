@@ -2,9 +2,9 @@ package com.contactmanager.backend.service;
 
 import java.util.Locale;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +20,16 @@ public class UserRegistrationService {
 
     private final UserRepository userRepository;
     private final UserRegistrationWriter registrationWriter;
-    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final PasswordEncoder passwordEncoder;
 
-    public UserRegistrationService(UserRepository userRepository, UserRegistrationWriter registrationWriter) {
+    public UserRegistrationService(UserRepository userRepository, UserRegistrationWriter registrationWriter,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.registrationWriter = registrationWriter;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public RegistrationResponse register(RegistrationRequest request) {
+    public RegistrationResult register(RegistrationRequest request) {
         boolean usesEmail = request.email() != null && !request.email().isBlank();
         String identifier = usesEmail
                 ? request.email().trim().toLowerCase(Locale.ROOT)
@@ -35,7 +37,7 @@ public class UserRegistrationService {
 
         try {
             if (userRepository.existsByIdentifier(identifier)) {
-                return registrationAccepted();
+                return registrationAccepted(false, identifier);
             }
         } catch (DataAccessException exception) {
             throw persistenceFailure(exception);
@@ -50,22 +52,40 @@ public class UserRegistrationService {
 
         try {
             registrationWriter.insert(user);
-            return registrationAccepted();
+            return registrationAccepted(true, identifier);
         } catch (DataIntegrityViolationException exception) {
-            return registrationAccepted();
+            if (violatesIdentifierConstraint(exception)) {
+                return registrationAccepted(false, identifier);
+            }
+            throw persistenceFailure(exception);
         } catch (DataAccessException exception) {
             throw persistenceFailure(exception);
         }
     }
 
-    private RegistrationResponse registrationAccepted() {
-        return new RegistrationResponse(
+    private boolean violatesIdentifierConstraint(DataIntegrityViolationException exception) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause instanceof ConstraintViolationException constraintViolation
+                    && constraintViolation.getConstraintName() != null
+                    && constraintViolation.getConstraintName().toLowerCase(Locale.ROOT)
+                            .contains("uk_users_identifier")) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
+    private RegistrationResult registrationAccepted(boolean created, String identifier) {
+        RegistrationResponse response = new RegistrationResponse(
                 null,
                 null,
                 null,
                 null,
                 null,
                 "If the provided contact information is eligible, registration has been accepted");
+        return new RegistrationResult(response, created, identifier);
     }
 
     private RegistrationPersistenceException persistenceFailure(DataAccessException cause) {

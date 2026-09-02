@@ -1,14 +1,4 @@
-import axios from "axios";
-
-const baseURL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
-
-const registrationApi = axios.create({
-  baseURL,
-  timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import registrationApi from "./contactApi";
 
 export const registerUser = (registration) =>
   registrationApi.post("/users/register", registration);

@@ -11,8 +11,10 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.TransientDataAccessResourceException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.contactmanager.backend.dto.RegistrationRequest;
 import com.contactmanager.backend.dto.RegistrationResponse;
@@ -30,7 +32,7 @@ class UserRegistrationServiceTests {
     void setUp() {
         userRepository = mock(UserRepository.class);
         registrationWriter = mock(UserRegistrationWriter.class);
-        service = new UserRegistrationService(userRepository, registrationWriter);
+        service = new UserRegistrationService(userRepository, registrationWriter, new BCryptPasswordEncoder());
     }
 
     @Test
@@ -39,26 +41,43 @@ class UserRegistrationServiceTests {
         when(userRepository.existsByIdentifier("user@example.com"))
                 .thenReturn(false)
                 .thenReturn(true);
-        RegistrationResponse newIdentifierResponse = service.register(request);
-        RegistrationResponse existingIdentifierResponse = service.register(request);
+        RegistrationResult newIdentifierResult = service.register(request);
+        RegistrationResult existingIdentifierResult = service.register(request);
 
-        assertThat(existingIdentifierResponse).isEqualTo(newIdentifierResponse);
-        assertThat(newIdentifierResponse.id()).isNull();
-        assertThat(newIdentifierResponse.email()).isNull();
-        assertThat(newIdentifierResponse.phone()).isNull();
+        assertThat(existingIdentifierResult.response()).isEqualTo(newIdentifierResult.response());
+        assertThat(newIdentifierResult.created()).isTrue();
+        assertThat(existingIdentifierResult.created()).isFalse();
+        assertThat(newIdentifierResult.response().id()).isNull();
+        assertThat(newIdentifierResult.response().email()).isNull();
+        assertThat(newIdentifierResult.response().phone()).isNull();
     }
 
     @Test
     void returnsGenericAcceptedResponseWhenUniqueConstraintDetectsDuplicate() {
         when(userRepository.existsByIdentifier("user@example.com")).thenReturn(false);
-        doThrow(new DataIntegrityViolationException("duplicate"))
+        ConstraintViolationException constraintViolation = new ConstraintViolationException(
+                "duplicate", null, "uk_users_identifier");
+        doThrow(new DataIntegrityViolationException("duplicate", constraintViolation))
                 .when(registrationWriter).insert(any(User.class));
 
-        RegistrationResponse response = service.register(request());
+        RegistrationResult result = service.register(request());
 
-        assertThat(response.message())
+        assertThat(result.created()).isFalse();
+        assertThat(result.response().message())
                 .isEqualTo("If the provided contact information is eligible, registration has been accepted");
-        verify(registrationWriter).insert(any(User.class));
+    }
+
+    @Test
+    void rejectsIntegrityViolationsForOtherConstraints() {
+        when(userRepository.existsByIdentifier("user@example.com")).thenReturn(false);
+        ConstraintViolationException constraintViolation = new ConstraintViolationException(
+                "required value missing", null, "another_constraint");
+        doThrow(new DataIntegrityViolationException("invalid", constraintViolation))
+                .when(registrationWriter).insert(any(User.class));
+
+        assertThatThrownBy(() -> service.register(request()))
+                .isInstanceOf(RegistrationPersistenceException.class)
+                .hasMessage("Unable to persist registration");
     }
 
     @Test

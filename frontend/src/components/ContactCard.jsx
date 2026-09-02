@@ -1,6 +1,6 @@
-import { Mail, Phone, Briefcase, Pencil } from "lucide-react";
+import { Mail, Phone, Briefcase, Eye, Pencil, Trash2 } from "lucide-react";
 
-function ContactCard({ contact, onEdit, isDarkMode }) {
+function ContactCard({ contact, onView, onEdit, onDelete, isDarkMode }) {
   const getInitials = (firstName, lastName) => {
     const first = firstName?.charAt(0) || "";
     const last = lastName?.charAt(0) || "";
@@ -36,15 +36,30 @@ function ContactCard({ contact, onEdit, isDarkMode }) {
               </p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => onEdit(contact)}
-            className="flex items-center gap-1.5 rounded-full bg-[#EE6C4D] px-3 py-2 text-sm font-semibold text-white hover:bg-[#D95D40] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#EE6C4D]/40 transition-all duration-200"
-            aria-label={`Edit ${contact.firstName} ${contact.lastName || ""}`.trim()}
-          >
-            <Pencil className="h-4 w-4" />
-            Edit
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => onView(contact)} className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E0FBFC] text-[#16425B] focus:outline-none focus:ring-2 focus:ring-[#98C1D9]" aria-label={`View ${contact.firstName} ${contact.lastName || ""}`.trim()}><Eye className="h-4 w-4" /></button>
+            <button
+              type="button"
+              onClick={() => onEdit(contact)}
+              className="flex items-center gap-1.5 rounded-full bg-[#EE6C4D] px-3 py-2 text-sm font-semibold text-white hover:bg-[#D95D40] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#EE6C4D]/40 transition-all duration-200"
+              aria-label={`Edit ${contact.firstName} ${contact.lastName || ""}`.trim()}
+            >
+              <Pencil className="h-4 w-4" />
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(contact)}
+              className={`flex h-9 w-9 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-[#EE6C4D]/40 transition-all duration-200 ${
+                isDarkMode
+                  ? "bg-white/10 text-[#EE6C4D] hover:bg-[#EE6C4D] hover:text-white"
+                  : "bg-[#FCE9E4] text-[#D95D40] hover:bg-[#EE6C4D] hover:text-white"
+              }`}
+              aria-label={`Delete ${contact.firstName} ${contact.lastName || ""}`.trim()}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Contact Details */}

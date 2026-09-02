@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, Mail, Phone, UserRound, XCircle } from "lucide-react";
 import { registerUser } from "../api/registrationApi";
+import { getSession } from "../api/authApi";
 
 const initialForm = {
   firstName: "",
@@ -12,7 +13,7 @@ const initialForm = {
   confirmPassword: "",
 };
 
-function Registration({ onBack }) {
+function Registration({ onBack, onRegistration }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [feedback, setFeedback] = useState(null);
@@ -69,10 +70,9 @@ function Registration({ onBack }) {
         phone: form.contactMethod === "phone" ? form.phone.trim() : null,
         password: form.password,
       };
-      const response = await registerUser(payload);
-      setFeedback({ type: "success", message: response.data.message || "Registration successful" });
-      setForm(initialForm);
-      setErrors({});
+      await registerUser(payload);
+      const { data: profile } = await getSession({ suppressUnauthorizedHandler: true });
+      onRegistration(profile);
     } catch (error) {
       const response = error.response;
       if (response?.status === 400 && response.data?.errors) {
@@ -80,6 +80,11 @@ function Registration({ onBack }) {
         setFeedback({ type: "error", message: response.data.message || "Please correct the highlighted fields" });
       } else if (response?.status === 409) {
         setFeedback({ type: "error", message: response.data?.message || "An account already exists" });
+      } else if (response?.status === 401) {
+        setFeedback({
+          type: "success",
+          message: "If the provided contact information is eligible, registration has been accepted. Sign in with existing credentials if you already have an account.",
+        });
       } else {
         setFeedback({ type: "error", message: "Registration could not be completed. Please try again." });
       }
@@ -104,7 +109,7 @@ function Registration({ onBack }) {
         <section className="flex flex-col justify-between bg-[#16425B] p-8 text-white sm:p-10">
           <div>
             <button type="button" onClick={onBack} className="mb-12 inline-flex items-center gap-2 rounded-lg text-[#E0FBFC] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#98C1D9]" disabled={submitting}>
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to contacts
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to login
             </button>
             <div className="mb-5 inline-flex rounded-2xl bg-[#98C1D9]/20 p-3"><UserRound className="h-8 w-8 text-[#E0FBFC]" aria-hidden="true" /></div>
             <h1 className="text-3xl font-bold">Create your account</h1>

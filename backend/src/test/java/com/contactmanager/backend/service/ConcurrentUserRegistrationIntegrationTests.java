@@ -2,29 +2,21 @@ package com.contactmanager.backend.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.contactmanager.backend.dto.RegistrationRequest;
-import com.contactmanager.backend.dto.RegistrationResponse;
 import com.contactmanager.backend.repository.UserRepository;
 
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:registration-test;DB_CLOSE_DELAY=-1",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-})
+@SpringBootTest
 class ConcurrentUserRegistrationIntegrationTests {
 
     @Autowired
@@ -33,48 +25,37 @@ class ConcurrentUserRegistrationIntegrationTests {
     @Autowired
     private UserRepository userRepository;
 
-    @BeforeEach
-    void clearUsers() {
-        userRepository.deleteAll();
-    }
-
     @Test
-    void concurrentRegistrationForSameIdentifierReturnsAcceptedWithoutRollbackFailure() throws Exception {
+    void concurrentRegistrationsForSameIdentifierBothReturnAccepted() throws Exception {
+        String email = "concurrent-" + UUID.randomUUID() + "@example.com";
         RegistrationRequest request = new RegistrationRequest(
-                "Test", "User", "Concurrent@Example.com", null, "valid-password");
+                "Concurrent", "User", email, null, "valid-password");
         CountDownLatch ready = new CountDownLatch(2);
         CountDownLatch start = new CountDownLatch(1);
 
         try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
-            List<Future<RegistrationResponse>> results = List.of(
-                    executor.submit(() -> registerWhenReleased(request, ready, start)),
-                    executor.submit(() -> registerWhenReleased(request, ready, start)));
+            Future<RegistrationResult> first = executor.submit(() -> registerWhenReleased(request, ready, start));
+            Future<RegistrationResult> second = executor.submit(() -> registerWhenReleased(request, ready, start));
 
-            try {
-                assertThat(ready.await(5, TimeUnit.SECONDS))
-                        .as("registration workers became ready")
-                        .isTrue();
-                start.countDown();
+            assertThat(ready.await(10, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
 
-                RegistrationResponse first = results.get(0).get(10, TimeUnit.SECONDS);
-                RegistrationResponse second = results.get(1).get(10, TimeUnit.SECONDS);
+            RegistrationResult firstResult = first.get(30, TimeUnit.SECONDS);
+            RegistrationResult secondResult = second.get(30, TimeUnit.SECONDS);
 
-                assertThat(first).isEqualTo(second);
-                assertThat(userRepository.count()).isEqualTo(1);
-            } finally {
-                start.countDown();
-                results.stream()
-                        .filter(result -> !result.isDone())
-                        .forEach(result -> result.cancel(true));
-            }
+            assertThat(firstResult.response()).isEqualTo(secondResult.response());
+            assertThat(firstResult.created() ^ secondResult.created()).isTrue();
+            assertThat(userRepository.findAllByIdentifier(email)).hasSize(1);
+        } finally {
+            userRepository.deleteAll(userRepository.findAllByIdentifier(email));
         }
     }
 
-    private RegistrationResponse registerWhenReleased(RegistrationRequest request,
+    private RegistrationResult registerWhenReleased(RegistrationRequest request,
             CountDownLatch ready, CountDownLatch start) throws InterruptedException {
         ready.countDown();
-        if (!start.await(5, TimeUnit.SECONDS)) {
-            throw new IllegalStateException("Timed out waiting to start concurrent registration");
+        if (!start.await(10, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Concurrent registration start timed out");
         }
         return registrationService.register(request);
     }
