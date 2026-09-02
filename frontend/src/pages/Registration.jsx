@@ -71,7 +71,7 @@ function Registration({ onBack, onRegistration }) {
         password: form.password,
       };
       await registerUser(payload);
-      const { data: profile } = await getSession();
+      const { data: profile } = await getSession({ suppressUnauthorizedHandler: true });
       onRegistration(profile);
     } catch (error) {
       const response = error.response;
@@ -80,6 +80,11 @@ function Registration({ onBack, onRegistration }) {
         setFeedback({ type: "error", message: response.data.message || "Please correct the highlighted fields" });
       } else if (response?.status === 409) {
         setFeedback({ type: "error", message: response.data?.message || "An account already exists" });
+      } else if (response?.status === 401) {
+        setFeedback({
+          type: "success",
+          message: "If the provided contact information is eligible, registration has been accepted. Sign in with existing credentials if you already have an account.",
+        });
       } else {
         setFeedback({ type: "error", message: "Registration could not be completed. Please try again." });
       }

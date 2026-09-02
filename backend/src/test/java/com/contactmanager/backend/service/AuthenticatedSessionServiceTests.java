@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 
 import com.contactmanager.backend.dto.UserProfileResponse;
 
@@ -22,10 +23,11 @@ class AuthenticatedSessionServiceTests {
     @Test
     void authenticatesNormalizesIdentifierSavesSessionContextAndReturnsProfile() {
         AuthenticationManager authenticationManager = mock(AuthenticationManager.class);
+        SessionAuthenticationStrategy sessionAuthenticationStrategy = mock(SessionAuthenticationStrategy.class);
         SecurityContextRepository contextRepository = mock(SecurityContextRepository.class);
         UserProfileService profileService = mock(UserProfileService.class);
         AuthenticatedSessionService service = new AuthenticatedSessionService(
-                authenticationManager, contextRepository, profileService);
+                authenticationManager, sessionAuthenticationStrategy, contextRepository, profileService);
         AuthenticatedUser principal = new AuthenticatedUser(7L, "user@example.com", "hash");
         Authentication authenticated = UsernamePasswordAuthenticationToken.authenticated(
                 principal, null, principal.getAuthorities());
@@ -41,6 +43,7 @@ class AuthenticatedSessionServiceTests {
         assertThat(result).isEqualTo(profile);
         verify(authenticationManager).authenticate(eq(
                 UsernamePasswordAuthenticationToken.unauthenticated("user@example.com", "password")));
+        verify(sessionAuthenticationStrategy).onAuthentication(eq(authenticated), eq(request), eq(response));
         verify(contextRepository).saveContext(any(), eq(request), eq(response));
         verify(profileService).getProfile(7L);
     }

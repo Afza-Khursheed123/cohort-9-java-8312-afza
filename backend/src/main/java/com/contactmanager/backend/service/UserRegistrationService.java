@@ -67,7 +67,9 @@ public class UserRegistrationService {
         Throwable cause = exception;
         while (cause != null) {
             if (cause instanceof ConstraintViolationException constraintViolation
-                    && "uk_users_identifier".equalsIgnoreCase(constraintViolation.getConstraintName())) {
+                    && constraintViolation.getConstraintName() != null
+                    && constraintViolation.getConstraintName().toLowerCase(Locale.ROOT)
+                            .contains("uk_users_identifier")) {
                 return true;
             }
             cause = cause.getCause();

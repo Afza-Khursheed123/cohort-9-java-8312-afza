@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 import com.contactmanager.backend.repository.UserRepository;
 import com.contactmanager.backend.repository.ContactRepository;
@@ -81,7 +82,27 @@ class RegistrationAuthenticationIntegrationTests {
                         "If the provided contact information is eligible, registration has been accepted"))
                 .andReturn();
 
-        assertThat(duplicate.getRequest().getSession(false)).isNull();
+        assertNotAuthenticated(duplicate);
+    }
+
+    @Test
+    void duplicatePhoneRegistrationCannotAuthenticateAsExistingUser() throws Exception {
+        register("""
+                {"firstName":"Existing","lastName":"User","phone":"+923001234567","password":"original-password"}
+                """);
+
+        MvcResult duplicate = mockMvc.perform(post("/api/users/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Attacker","lastName":"User","phone":"+923001234567","password":"attacker-password"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(nullValue()))
+                .andExpect(jsonPath("$.message").value(
+                        "If the provided contact information is eligible, registration has been accepted"))
+                .andReturn();
+
+        assertNotAuthenticated(duplicate);
     }
 
     @Test
@@ -94,7 +115,7 @@ class RegistrationAuthenticationIntegrationTests {
                 .andExpect(status().isBadRequest())
                 .andReturn();
 
-        assertThat(invalid.getRequest().getSession(false)).isNull();
+        assertNotAuthenticated(invalid);
     }
 
     private MockHttpSession register(String body) throws Exception {
@@ -106,5 +127,13 @@ class RegistrationAuthenticationIntegrationTests {
                         "If the provided contact information is eligible, registration has been accepted"))
                 .andReturn();
         return (MockHttpSession) result.getRequest().getSession(false);
+    }
+
+    private void assertNotAuthenticated(MvcResult result) {
+        MockHttpSession session = (MockHttpSession) result.getRequest().getSession(false);
+        if (session != null) {
+            assertThat(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
+                    .isNull();
+        }
     }
 }

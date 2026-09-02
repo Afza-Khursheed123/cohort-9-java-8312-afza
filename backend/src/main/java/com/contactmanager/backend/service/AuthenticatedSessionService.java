@@ -6,25 +6,28 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.stereotype.Service;
 
 import com.contactmanager.backend.dto.UserProfileResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 @Service
 public class AuthenticatedSessionService {
 
     private final AuthenticationManager authenticationManager;
+    private final SessionAuthenticationStrategy sessionAuthenticationStrategy;
     private final SecurityContextRepository securityContextRepository;
     private final UserProfileService profileService;
 
     public AuthenticatedSessionService(AuthenticationManager authenticationManager,
+            SessionAuthenticationStrategy sessionAuthenticationStrategy,
             SecurityContextRepository securityContextRepository,
             UserProfileService profileService) {
         this.authenticationManager = authenticationManager;
+        this.sessionAuthenticationStrategy = sessionAuthenticationStrategy;
         this.securityContextRepository = securityContextRepository;
         this.profileService = profileService;
     }
@@ -35,10 +38,7 @@ public class AuthenticatedSessionService {
                 UsernamePasswordAuthenticationToken.unauthenticated(
                         UserAuthenticationService.normalizeIdentifier(identifier), password));
 
-        HttpSession existingSession = request.getSession(false);
-        if (existingSession != null) {
-            request.changeSessionId();
-        }
+        sessionAuthenticationStrategy.onAuthentication(authentication, request, response);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
