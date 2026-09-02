@@ -1,7 +1,9 @@
 package com.contactmanager.backend.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -73,12 +75,17 @@ public Contact updateContact(Long userId, Long id, Contact updatedContact) {
             .filter(phone -> phone.getId() != null)
             .collect(Collectors.toMap(PhoneNumber::getId, Function.identity()));
 
+    Set<Long> submittedEmailIds = new HashSet<>();
+    Set<Long> submittedPhoneIds = new HashSet<>();
+
     updatedContact.getEmailAddresses().stream()
             .filter(email -> email.getId() != null)
-            .forEach(email -> requireOwnedChild(existingEmails, email.getId(), "email address"));
+            .forEach(email -> requireUniqueOwnedChild(
+                    existingEmails, submittedEmailIds, email.getId(), "email address"));
     updatedContact.getPhoneNumbers().stream()
             .filter(phone -> phone.getId() != null)
-            .forEach(phone -> requireOwnedChild(existingPhones, phone.getId(), "phone number"));
+            .forEach(phone -> requireUniqueOwnedChild(
+                    existingPhones, submittedPhoneIds, phone.getId(), "phone number"));
 
     existing.setFirstName(updatedContact.getFirstName());
     existing.setLastName(updatedContact.getLastName());
@@ -106,7 +113,12 @@ public Contact updateContact(Long userId, Long id, Contact updatedContact) {
     return contactRepository.save(existing);
 }
 
-private <T> void requireOwnedChild(Map<Long, T> existingChildren, Long childId, String childType) {
+private <T> void requireUniqueOwnedChild(
+        Map<Long, T> existingChildren, Set<Long> submittedIds, Long childId, String childType) {
+    if (!submittedIds.add(childId)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Submitted " + childType + " ID is repeated");
+    }
     if (!existingChildren.containsKey(childId)) {
         throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                 "Submitted " + childType + " does not belong to this contact");

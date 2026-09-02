@@ -174,6 +174,54 @@ class ContactServiceTests {
     }
 
     @Test
+    void updateRejectsRepeatedEmailId() {
+        Contact existing = new Contact();
+        EmailAddress existingEmail = email("mine@example.com", "Personal");
+        setId(existingEmail, 10L);
+        existing.getEmailAddresses().add(existingEmail);
+
+        Contact update = new Contact();
+        EmailAddress firstSubmission = email("first@example.com", "Work");
+        EmailAddress repeatedSubmission = email("second@example.com", "Other");
+        setId(firstSubmission, 10L);
+        setId(repeatedSubmission, 10L);
+        update.getEmailAddresses().add(firstSubmission);
+        update.getEmailAddresses().add(repeatedSubmission);
+        when(contactRepository.findByIdAndOwnerId(22L, 7L)).thenReturn(Optional.of(existing));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.updateContact(7L, 22L, update));
+
+        assertEquals(400, exception.getStatusCode().value());
+        assertSame(existingEmail, existing.getEmailAddresses().get(0));
+        verify(contactRepository, never()).save(any());
+    }
+
+    @Test
+    void updateRejectsRepeatedPhoneId() {
+        Contact existing = new Contact();
+        PhoneNumber existingPhone = phone("11111111", "Personal");
+        setId(existingPhone, 20L);
+        existing.getPhoneNumbers().add(existingPhone);
+
+        Contact update = new Contact();
+        PhoneNumber firstSubmission = phone("22222222", "Work");
+        PhoneNumber repeatedSubmission = phone("33333333", "Other");
+        setId(firstSubmission, 20L);
+        setId(repeatedSubmission, 20L);
+        update.getPhoneNumbers().add(firstSubmission);
+        update.getPhoneNumbers().add(repeatedSubmission);
+        when(contactRepository.findByIdAndOwnerId(22L, 7L)).thenReturn(Optional.of(existing));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> service.updateContact(7L, 22L, update));
+
+        assertEquals(400, exception.getStatusCode().value());
+        assertSame(existingPhone, existing.getPhoneNumbers().get(0));
+        verify(contactRepository, never()).save(any());
+    }
+
+    @Test
     void deleteDoesNotRevealOrDeleteAnotherUsersContact() {
         when(contactRepository.findByIdAndOwnerId(22L, 7L)).thenReturn(Optional.empty());
 
