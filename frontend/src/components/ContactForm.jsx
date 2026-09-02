@@ -16,6 +16,7 @@ function ContactForm({
   initialData,
   onCancel,
   isDarkMode,
+  onDirtyChange,
 }) {
   const [formData, setFormData] = useState(initialData || emptyFormData);
 
@@ -74,6 +75,7 @@ function ContactForm({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    onDirtyChange(true);
     setFormData({
       ...formData,
       [name]: value,
@@ -135,6 +137,7 @@ function ContactForm({
     setFormData(emptyFormData);
     setErrors({});
     setTouched({});
+    onDirtyChange(false);
   };
 
   const inputClasses = (fieldName) => {

@@ -14,6 +14,7 @@ function Home({ onRegister }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
+  const [isFormDirty, setIsFormDirty] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const formRef = useRef(null);
   const loadRequestId = useRef(0);
@@ -193,17 +194,35 @@ function Home({ onRegister }) {
 
   const editContact = (contact) => {
     setEditingContact(contact);
+    setIsFormDirty(false);
     setShowForm(true);
     setTimeout(scrollToForm, 100);
   };
 
   const cancelEdit = () => {
     setEditingContact(null);
+    setIsFormDirty(false);
     setShowForm(false);
   };
 
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const handleRegister = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (
+      showForm &&
+      isFormDirty &&
+      !window.confirm("Discard your unsaved contact changes?")
+    ) {
+      return;
+    }
+
+    onRegister();
   };
 
   return (
@@ -234,8 +253,9 @@ function Home({ onRegister }) {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={onRegister}
-                className="rounded-full border border-[#98C1D9]/60 px-4 py-2 text-sm font-semibold text-[#E0FBFC] transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#98C1D9]"
+                onClick={handleRegister}
+                disabled={isSubmitting}
+                className="rounded-full border border-[#98C1D9]/60 px-4 py-2 text-sm font-semibold text-[#E0FBFC] transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#98C1D9] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Register
               </button>
@@ -251,6 +271,7 @@ function Home({ onRegister }) {
               <button
                 onClick={() => {
                   setEditingContact(null);
+                  setIsFormDirty(false);
                   setShowForm(!showForm);
                   if (!showForm) {
                     setTimeout(scrollToForm, 100);
@@ -293,6 +314,7 @@ function Home({ onRegister }) {
                 initialData={editFormData}
                 onCancel={cancelEdit}
                 isDarkMode={isDarkMode}
+                onDirtyChange={setIsFormDirty}
               />
             </div>
           )}
@@ -318,7 +340,13 @@ function Home({ onRegister }) {
             </div>
           </>
         ) : contacts.length === 0 ? (
-          <EmptyState onAddContact={() => setShowForm(true)} isDarkMode={isDarkMode} />
+          <EmptyState
+            onAddContact={() => {
+              setIsFormDirty(false);
+              setShowForm(true);
+            }}
+            isDarkMode={isDarkMode}
+          />
         ) : (
           <ContactList contacts={contacts} onEdit={editContact} isDarkMode={isDarkMode} />
         )}
