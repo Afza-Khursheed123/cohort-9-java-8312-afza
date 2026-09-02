@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Briefcase, Mail, Phone, Plus, Trash2, User, X } from "lucide-react";
 
 const newEmail = () => ({ email: "", label: "Personal" });
@@ -16,13 +16,9 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
   const submissionInProgress = useRef(false);
   const initialFormData = useRef(normalize(initialData));
 
-  const updateFormData = (updater) => {
-    setFormData((current) => {
-      const next = typeof updater === "function" ? updater(current) : updater;
-      onDirtyChange(JSON.stringify(next) !== JSON.stringify(initialFormData.current));
-      return next;
-    });
-  };
+  useEffect(() => {
+    onDirtyChange(JSON.stringify(formData) !== JSON.stringify(initialFormData.current));
+  }, [formData, onDirtyChange]);
 
   const validate = () => {
     const next = {};
@@ -41,12 +37,12 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
   };
 
   const setField = ({ target: { name, value } }) => {
-    updateFormData((current) => ({ ...current, [name]: value }));
+    setFormData((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   };
-  const setItem = (collection, index, field, value) => updateFormData((current) => ({ ...current, [collection]: current[collection].map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item) }));
-  const addItem = (collection) => updateFormData((current) => ({ ...current, [collection]: [...current[collection], collection === "emailAddresses" ? newEmail() : newPhone()] }));
-  const removeItem = (collection, index) => updateFormData((current) => ({ ...current, [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index) }));
+  const setItem = (collection, index, field, value) => setFormData((current) => ({ ...current, [collection]: current[collection].map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item) }));
+  const addItem = (collection) => setFormData((current) => ({ ...current, [collection]: [...current[collection], collection === "emailAddresses" ? newEmail() : newPhone()] }));
+  const removeItem = (collection, index) => setFormData((current) => ({ ...current, [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index) }));
   const submit = async (event) => {
     event.preventDefault();
     if (isSubmitting || submissionInProgress.current || !validate()) return;
@@ -62,7 +58,7 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
     <TextField id="title" label="Title" icon={Briefcase} value={formData.title} onChange={setField} disabled={isSubmitting} />
     <Collection title="Email addresses" icon={Mail} onAdd={() => addItem("emailAddresses")} disabled={isSubmitting}>{formData.emailAddresses.map((item, index) => <MethodRow key={`email-${index}`} value={item.email} label={item.label} type="email" id={`email-${index}`} placeholder="name@example.com" labels={["Work", "Personal", "Other"]} onValue={(value) => setItem("emailAddresses", index, "email", value)} onLabel={(value) => setItem("emailAddresses", index, "label", value)} onRemove={() => removeItem("emailAddresses", index)} canRemove={formData.emailAddresses.length > 1} disabled={isSubmitting} valueError={error(`email-${index}`)} labelError={error(`email-label-${index}`)} />)}</Collection>
     <Collection title="Phone numbers" icon={Phone} onAdd={() => addItem("phoneNumbers")} disabled={isSubmitting}>{formData.phoneNumbers.map((item, index) => <MethodRow key={`phone-${index}`} value={item.phoneNumber} label={item.label} type="tel" id={`phone-${index}`} placeholder="+923001234567" labels={["Work", "Home", "Personal", "Other"]} onValue={(value) => setItem("phoneNumbers", index, "phoneNumber", value)} onLabel={(value) => setItem("phoneNumbers", index, "label", value)} onRemove={() => removeItem("phoneNumbers", index)} canRemove={formData.phoneNumbers.length > 1} disabled={isSubmitting} valueError={error(`phone-${index}`)} labelError={error(`phone-label-${index}`)} />)}</Collection>
-    <div className="flex gap-4 pt-4"><button type="submit" disabled={isSubmitting} className="flex-1 rounded-full bg-[#16425B] px-6 py-3 font-semibold text-white disabled:opacity-50">{isSubmitting ? (initialData ? "Updating..." : "Saving...") : (initialData ? "Update Contact" : "Save Contact")}</button><button type="button" onClick={initialData ? onCancel : () => { updateFormData(emptyFormData()); setErrors({}); }} disabled={isSubmitting} className="rounded-full bg-[#E7F1F6] px-6 py-3 font-semibold text-[#293241] disabled:opacity-50">{initialData ? "Cancel" : "Reset"}</button></div>
+    <div className="flex gap-4 pt-4"><button type="submit" disabled={isSubmitting} className="flex-1 rounded-full bg-[#16425B] px-6 py-3 font-semibold text-white disabled:opacity-50">{isSubmitting ? (initialData ? "Updating..." : "Saving...") : (initialData ? "Update Contact" : "Save Contact")}</button><button type="button" onClick={initialData ? onCancel : () => { setFormData(emptyFormData()); setErrors({}); }} disabled={isSubmitting} className="rounded-full bg-[#E7F1F6] px-6 py-3 font-semibold text-[#293241] disabled:opacity-50">{initialData ? "Cancel" : "Reset"}</button></div>
   </form>;
 }
 
