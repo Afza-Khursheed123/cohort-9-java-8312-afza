@@ -60,6 +60,7 @@ class AuthenticationFlowIntegrationTests {
 
         mockMvc.perform(post("/api/auth/logout").session(session).with(csrf()))
                 .andExpect(status().isNoContent());
+        org.assertj.core.api.Assertions.assertThat(session.isInvalid()).isTrue();
         mockMvc.perform(get("/api/auth/session"))
                 .andExpect(status().isUnauthorized());
     }
