@@ -1,69 +1,39 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import ContactCard from "./ContactCard";
 import { Search, Filter, ArrowUpDown, X } from "lucide-react";
 
-function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("name");
-  const [filterTitle, setFilterTitle] = useState("");
-
-  // Get unique titles for filter
-  const uniqueTitles = useMemo(() => {
-    const titles = contacts
-      .map((c) => c.title)
-      .filter((title) => title && title.trim() !== "");
-    return [...new Set(titles)];
-  }, [contacts]);
-
-  // Filter and sort contacts
-  const filteredAndSortedContacts = useMemo(() => {
-    let result = [...contacts];
-
-    // Search filter
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (contact) =>
-          contact.firstName?.toLowerCase().includes(term) ||
-          contact.lastName?.toLowerCase().includes(term) ||
-          contact.emailAddresses?.some((email) =>
-            email.email.toLowerCase().includes(term)
-          ) ||
-          contact.phoneNumbers?.some((phone) =>
-            phone.phoneNumber.includes(term)
-          )
-      );
-    }
-
-    // Title filter
-    if (filterTitle) {
-      result = result.filter((contact) => contact.title === filterTitle);
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return (a.firstName || "").localeCompare(b.firstName || "");
-        case "email":
-          const emailA = a.emailAddresses?.[0]?.email || "";
-          const emailB = b.emailAddresses?.[0]?.email || "";
-          return emailA.localeCompare(emailB);
-        case "title":
-          return (a.title || "").localeCompare(b.title || "");
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  }, [contacts, searchTerm, sortBy, filterTitle]);
+function ContactList({
+  contacts,
+  onEdit,
+  onDelete,
+  isDarkMode,
+  searchTerm,
+  onSearchChange,
+  sortBy,
+  onSortChange,
+  filterTitle,
+  onTitleChange,
+  titles,
+  titlesError,
+  onRetryTitles,
+  page,
+  totalPages,
+  totalElements,
+  onPageChange,
+}) {
+  const pageNumbers = useMemo(() => {
+    const start = Math.max(0, Math.min(page - 2, totalPages - 5));
+    return Array.from(
+      { length: Math.min(5, totalPages) },
+      (_, index) => start + index,
+    );
+  }, [page, totalPages]);
 
   // Clear all filters
   const clearFilters = () => {
-    setSearchTerm("");
-    setFilterTitle("");
-    setSortBy("name");
+    onSearchChange("");
+    onTitleChange("");
+    onSortChange("name");
   };
 
   const hasActiveFilters = searchTerm || filterTitle || sortBy !== "name";
@@ -80,7 +50,7 @@ function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
               type="text"
               placeholder="Search contacts..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => onSearchChange(e.target.value)}
               className={`w-full pl-10 pr-4 py-3 rounded-xl border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#98C1D9] transition-all duration-200 ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC] placeholder:text-[#89939C]" : "bg-white text-[#293241] placeholder:text-[#8293A3]"}`}
             />
           </div>
@@ -90,7 +60,7 @@ function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
             <ArrowUpDown className="h-5 w-5 text-[#3D5A80]" />
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => onSortChange(e.target.value)}
               className={`px-3 py-3 rounded-xl border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#98C1D9] transition-all duration-200 ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC]" : "bg-white text-[#293241]"}`}
             >
               <option value="name">Sort by Name</option>
@@ -100,16 +70,16 @@ function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
           </div>
 
           {/* Title Filter */}
-          {uniqueTitles.length > 0 && (
+          {titles.length > 0 && (
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5 text-[#3D5A80]" />
               <select
                 value={filterTitle}
-                onChange={(e) => setFilterTitle(e.target.value)}
+                onChange={(e) => onTitleChange(e.target.value)}
                 className={`px-3 py-3 rounded-xl border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#98C1D9] transition-all duration-200 ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC]" : "bg-white text-[#293241]"}`}
               >
                 <option value="">All Titles</option>
-                {uniqueTitles.map((title) => (
+                {titles.map((title) => (
                   <option key={title} value={title}>
                     {title}
                   </option>
@@ -129,17 +99,32 @@ function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
             </button>
           )}
         </div>
+        {titlesError && (
+          <div
+            className={`mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#EE6C4D]/60 p-3 text-sm ${isDarkMode ? "bg-[#242B31] text-[#F7FAFC]" : "bg-white text-[#293241]"}`}
+            role="alert"
+          >
+            <span>Unable to load title filters.</span>
+            <button
+              type="button"
+              onClick={() => void onRetryTitles()}
+              className="rounded-lg bg-[#16425B] px-3 py-2 font-semibold text-white hover:bg-[#3D5A80]"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Results Count */}
       <div className={`flex items-center justify-between text-sm ${isDarkMode ? "text-[#98C1D9]" : "text-[#3D5A80]"}`}>
         <p>
-          Showing {filteredAndSortedContacts.length} of {contacts.length} contacts
+          Showing {contacts.length} of {totalElements} contacts
         </p>
       </div>
 
       {/* Contact Cards Grid */}
-      {filteredAndSortedContacts.length === 0 ? (
+      {contacts.length === 0 ? (
         <div className={`text-center py-14 rounded-2xl ${isDarkMode ? "bg-[#242B31]" : "bg-white shadow-sm"}`}>
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[#E0FBFC] mb-4">
             <Search className="h-7 w-7 text-[#3D5A80]" />
@@ -155,7 +140,7 @@ function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAndSortedContacts.map((contact) => (
+          {contacts.map((contact) => (
             <ContactCard
               key={contact.id}
               contact={contact}
@@ -165,6 +150,50 @@ function ContactList({ contacts, onEdit, onDelete, isDarkMode }) {
             />
           ))}
         </div>
+      )}
+
+      {totalPages > 1 && (
+        <nav
+          className="flex flex-wrap items-center justify-center gap-2 pt-2"
+          aria-label="Contact pagination"
+        >
+          <button
+            type="button"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page === 0}
+            className="rounded-lg bg-[#16425B] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3D5A80] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Previous
+          </button>
+          {pageNumbers.map((pageNumber) => (
+            <button
+              type="button"
+              key={pageNumber}
+              onClick={() => onPageChange(pageNumber)}
+              aria-current={pageNumber === page ? "page" : undefined}
+              className={`h-9 min-w-9 rounded-lg px-2 text-sm font-semibold transition-colors ${
+                pageNumber === page
+                  ? "bg-[#EE6C4D] text-white"
+                  : isDarkMode
+                    ? "bg-[#242B31] text-[#E0FBFC] hover:bg-[#3D5A80]"
+                    : "bg-white text-[#16425B] hover:bg-[#D9EAF2]"
+              }`}
+            >
+              {pageNumber + 1}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= totalPages - 1}
+            className="rounded-lg bg-[#16425B] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#3D5A80] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Next
+          </button>
+          <span className={`w-full text-center text-sm ${isDarkMode ? "text-[#98C1D9]" : "text-[#3D5A80]"}`}>
+            Page {page + 1} of {totalPages}
+          </span>
+        </nav>
       )}
     </div>
   );
