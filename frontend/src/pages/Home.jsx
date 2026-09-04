@@ -33,6 +33,7 @@ function Home({ onProfile }) {
   const isProfileOpen = Boolean(profileContact);
   const [isDeleting, setIsDeleting] = useState(false);
   const formRef = useRef(null);
+  const loadContactsRef = useRef(null);
   const loadRequestId = useRef(0);
   const titleRequestId = useRef(0);
   const contactsVersion = useRef(0);
@@ -81,8 +82,11 @@ function Home({ onProfile }) {
         requestId === loadRequestId.current &&
         requestContactsVersion === contactsVersion.current
       ) {
-        if (response.data.totalPages > 0 && requestedPage >= response.data.totalPages) {
-          setPage(response.data.totalPages - 1);
+        if (
+          requestedPage > 0 &&
+          (response.data.totalPages === 0 || requestedPage >= response.data.totalPages)
+        ) {
+          setPage(Math.max(response.data.totalPages - 1, 0));
           return;
         }
         setContacts(response.data.content);
@@ -118,12 +122,16 @@ function Home({ onProfile }) {
         setTitles(response.data);
       }
     } catch (error) {
-      console.error("Error loading contact titles:", error);
       if (requestId === titleRequestId.current) {
+        console.error("Error loading contact titles:", error);
         setTitlesError(true);
       }
     }
   }, []);
+
+  useEffect(() => {
+    loadContactsRef.current = loadContacts;
+  }, [loadContacts]);
 
   useEffect(() => {
     loadRequestId.current += 1;
@@ -193,7 +201,7 @@ function Home({ onProfile }) {
           index === contactIndex ? response.data : currentContact,
         );
       });
-      void loadContacts();
+      void loadContactsRef.current();
       void loadTitles();
       toast.success("Contact added successfully!", {
         duration: 4000,
@@ -244,7 +252,7 @@ function Home({ onProfile }) {
             : currentContact,
         ),
       );
-      void loadContacts();
+      void loadContactsRef.current();
       void loadTitles();
       toast.success("Contact updated successfully!", {
         duration: 4000,
