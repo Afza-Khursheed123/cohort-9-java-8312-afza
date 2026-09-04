@@ -34,6 +34,9 @@ public class UserRegistrationService {
         String identifier = usesEmail
                 ? request.email().trim().toLowerCase(Locale.ROOT)
                 : request.phone().trim();
+        // Perform the intentionally expensive password hash for every valid request so
+        // an existing identifier does not have a noticeably faster response path.
+        String passwordHash = passwordEncoder.encode(request.password());
 
         try {
             if (userRepository.existsByIdentifier(identifier)) {
@@ -48,7 +51,7 @@ public class UserRegistrationService {
                 request.lastName().trim(),
                 identifier,
                 usesEmail ? IdentifierType.EMAIL : IdentifierType.PHONE,
-                passwordEncoder.encode(request.password()));
+                passwordHash);
 
         try {
             registrationWriter.insert(user);

@@ -1,6 +1,7 @@
 package com.contactmanager.backend.controller;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -60,6 +61,7 @@ class AuthenticationFlowIntegrationTests {
 
         mockMvc.perform(post("/api/auth/logout").session(session).with(csrf()))
                 .andExpect(status().isNoContent());
+        assertThat(session.isInvalid()).isTrue();
         mockMvc.perform(get("/api/auth/session"))
                 .andExpect(status().isUnauthorized());
     }

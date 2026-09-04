@@ -35,9 +35,40 @@ function ContactForm({ onSave, isSubmitting, setIsSubmitting, initialData, onCan
     setFormData((current) => ({ ...current, [name]: value }));
     setErrors((current) => ({ ...current, [name]: undefined }));
   };
-  const setItem = (collection, index, field, value) => setFormData((current) => ({ ...current, [collection]: current[collection].map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item) }));
+  const itemErrorKey = (collection, field, index) =>
+    `${collection === "emailAddresses" ? "email" : "phone"}${field === "label" ? "-label" : ""}-${index}`;
+  const setItem = (collection, index, field, value) => {
+    setFormData((current) => ({
+      ...current,
+      [collection]: current[collection].map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }));
+    setErrors((current) => ({
+      ...current,
+      [itemErrorKey(collection, field, index)]: undefined,
+    }));
+  };
   const addItem = (collection) => setFormData((current) => ({ ...current, [collection]: [...current[collection], collection === "emailAddresses" ? newEmail() : newPhone()] }));
-  const removeItem = (collection, index) => setFormData((current) => ({ ...current, [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index) }));
+  const removeItem = (collection, index) => {
+    setFormData((current) => ({
+      ...current,
+      [collection]: current[collection].filter((_, itemIndex) => itemIndex !== index),
+    }));
+    setErrors((current) => {
+      const prefix = collection === "emailAddresses" ? "email" : "phone";
+      return Object.fromEntries(
+        Object.entries(current).flatMap(([key, message]) => {
+          const match = key.match(new RegExp(`^${prefix}(-label)?-(\\d+)$`));
+          if (!match) return [[key, message]];
+          const errorIndex = Number(match[2]);
+          if (errorIndex === index) return [];
+          const nextIndex = errorIndex > index ? errorIndex - 1 : errorIndex;
+          return [[`${prefix}${match[1] ?? ""}-${nextIndex}`, message]];
+        }),
+      );
+    });
+  };
   const submit = async (event) => {
     event.preventDefault();
     if (isSubmitting || submissionInProgress.current || !validate()) return;
